@@ -357,10 +357,11 @@ public class Board : Singleton<Board>
         var targetCell = _cells[index];
         var selectedCell = _cells[_selectedCellIndex];
 
+        selectedCell.Deselect();
+
         if (_selectedCellIndex == index)
         {
             _selectedCellIndex = -1;
-            selectedCell.Deselect();
             return;
         }
 
@@ -368,14 +369,11 @@ public class Board : Singleton<Board>
         {
             selectedCell.SetState(false, selectedCell.Value);
             targetCell.SetState(false, targetCell.Value);
-            targetCell.Select();
 
             _selectedCellIndex = -1;
         }
         else
         {
-            selectedCell.Deselect();
-
             if (selectedCell.Value != targetCell.Value && selectedCell.Value + targetCell.Value != 10)
             {
                 _selectedCellIndex = index;
