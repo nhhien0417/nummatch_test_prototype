@@ -2,18 +2,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
-public class Board : MonoBehaviour
+public class Board : Singleton<Board>
 {
     [SerializeField] private GameObject _cellPrefab;
     [SerializeField] private Transform _container;
 
     private const int Rows = 3;
     private const int Cols = 9;
-    private const int TotalCells = Rows * Cols;
+    private const int GenerateCells = Rows * Cols;
 
     private List<(int, int)> _matchPairs = new();
     private List<Cell> _cells = new();
-    private int[] _boardValues = new int[TotalCells];
+
+    private int[] _boardValues = new int[GenerateCells];
+    private int _selectedCellIndex = -1;
 
     private void Start()
     {
@@ -27,7 +29,7 @@ public class Board : MonoBehaviour
 
         while (true)
         {
-            if (TryGenerateBoard(1))
+            if (TryGenerateBoard(3))
             {
                 SpawnCells();
                 PrintMatchPairs();
@@ -55,19 +57,20 @@ public class Board : MonoBehaviour
     {
         Reset();
 
-        for (int i = 0; i < TotalCells; i++)
+        for (int i = 0; i < GenerateCells; i++)
         {
             var obj = Instantiate(_cellPrefab, _container);
             var cell = obj.GetComponent<Cell>();
 
-            cell.SetValue(_boardValues[i]);
+            cell.SetState(true, _boardValues[i]);
+            cell.SetIndex(i);
             _cells.Add(cell);
         }
     }
 
     private bool TryGenerateBoard(int pairsCount)
     {
-        _boardValues = new int[TotalCells];
+        _boardValues = new int[GenerateCells];
         _matchPairs = PickMatchPairs(pairsCount);
 
         var valuePool = new List<int>();
@@ -75,7 +78,7 @@ public class Board : MonoBehaviour
             for (var j = 0; j < 3; j++)
                 valuePool.Add(i);
 
-        for (var index = 0; index < TotalCells; index++)
+        for (var index = 0; index < GenerateCells; index++)
         {
             var value = 0;
             var pair = _matchPairs.FirstOrDefault(p => p.Item1 == index || p.Item2 == index);
@@ -112,7 +115,7 @@ public class Board : MonoBehaviour
     {
         var allValidPairs = new List<(int, int)>();
 
-        for (int i = 0; i < TotalCells; i++)
+        for (int i = 0; i < GenerateCells; i++)
         {
             var row = i / Cols;
             var col = i % Cols;
@@ -206,7 +209,7 @@ public class Board : MonoBehaviour
     {
         var foundPairs = new HashSet<(int, int)>();
 
-        for (var i = 0; i < TotalCells; i++)
+        for (var i = 0; i < GenerateCells; i++)
         {
             var valA = _boardValues[i];
             var row = i / Cols;
@@ -253,6 +256,113 @@ public class Board : MonoBehaviour
         {
             var pair = i < j ? (i, j) : (j, i);
             foundPairs.Add(pair);
+        }
+    }
+    #endregion
+
+    #region CheckMatch
+    private bool CanMatch(Cell a, Cell b)
+    {
+        if (a == null || b == null || a == b)
+            return false;
+
+        var valueA = a.Value;
+        var valueB = b.Value;
+        var indexA = a.Index;
+        var indexB = b.Index;
+
+        // Điều kiện 1: Giống nhau hoặc tổng = 10
+        if (!(valueA == valueB || valueA + valueB == 10))
+            return false;
+
+        int rowA = indexA / 9, colA = indexA % 9;
+        int rowB = indexB / 9, colB = indexB % 9;
+
+        var deltaRow = rowB - rowA;
+        var deltaCol = colB - colA;
+
+        // Điều kiện 2: Trên cùng hàng / cột / chéo
+        if (rowA == rowB || colA == colB || Mathf.Abs(deltaRow) == Mathf.Abs(deltaCol))
+        {
+            var stepRow = Mathf.Clamp(deltaRow, -1, 1);
+            var stepCol = Mathf.Clamp(deltaCol, -1, 1);
+
+            var currRow = rowA + stepRow;
+            var currCol = colA + stepCol;
+
+            while (currRow != rowB || currCol != colB)
+            {
+                var currIndex = currRow * 9 + currCol;
+                if (currIndex >= 0 && currIndex < _cells.Count && _cells[currIndex].IsActive)
+                    return false;
+
+                currRow += stepRow;
+                currCol += stepCol;
+            }
+
+            return true;
+        }
+
+        // Điều kiện 3: Nằm liên tiếp qua các ô trống (zero-path)
+        if (IsConnectedByEmptyCells(indexA, indexB))
+            return true;
+
+        return false;
+    }
+
+    private bool IsConnectedByEmptyCells(int fromIndex, int toIndex)
+    {
+        var start = Mathf.Min(fromIndex, toIndex);
+        var end = Mathf.Max(fromIndex, toIndex);
+
+        for (int i = start + 1; i < end; i++)
+        {
+            if (_cells[i].IsActive)
+                return false;
+        }
+
+        return true;
+    }
+    #endregion
+
+    #region Cell Interaction
+    public void OnCellSelected(int index)
+    {
+        if (index < 0 || index >= GenerateCells) return;
+
+        if (_selectedCellIndex == -1)
+        {
+            _selectedCellIndex = index;
+            _cells[index].Select();
+        }
+        else
+        {
+            if (_selectedCellIndex == index)
+            {
+                _selectedCellIndex = -1;
+                _cells[index].Deselect();
+            }
+            else
+            {
+                var selectedCell = _cells[_selectedCellIndex];
+                var targetCell = _cells[index];
+
+                if (CanMatch(selectedCell, targetCell))
+                {
+                    _selectedCellIndex = -1;
+
+                    targetCell.Select();
+                    targetCell.SetState(false, targetCell.Value);
+                    selectedCell.SetState(false, selectedCell.Value);
+                }
+                else
+                {
+                    _selectedCellIndex = index;
+
+                    selectedCell.Deselect();
+                    targetCell.Select();
+                }
+            }
         }
     }
     #endregion
