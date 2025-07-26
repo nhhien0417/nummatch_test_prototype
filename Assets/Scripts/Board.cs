@@ -125,6 +125,12 @@ public class Board : MonoBehaviour
                 allValidPairs.Add((i, i + Cols + 1));
             if (row < Rows - 1 && col > 0)
                 allValidPairs.Add((i, i + Cols - 1));
+
+            if (col == Cols - 1 && row < Rows - 1)
+            {
+                var nextRowStart = (row + 1) * Cols;
+                allValidPairs.Add((i, nextRowStart));
+            }
         }
 
         allValidPairs = allValidPairs.OrderBy(_ => Random.Range(0, 10000)).ToList();
@@ -174,7 +180,7 @@ public class Board : MonoBehaviour
         var row = index / Cols;
         var col = index % Cols;
 
-        if (col > 0) neighbors.Add(index - 1);
+        if (col > 0 || col == 0 && row > 0) neighbors.Add(index - 1);
         if (row > 0) neighbors.Add(index - Cols);
         if (row > 0 && col > 0) neighbors.Add(index - Cols - 1);
         if (row > 0 && col < Cols - 1) neighbors.Add(index - Cols + 1);
@@ -210,6 +216,18 @@ public class Board : MonoBehaviour
             CheckAndAddPair(i, row + 1, col, valA, foundPairs);
             CheckAndAddPair(i, row + 1, col + 1, valA, foundPairs);
             CheckAndAddPair(i, row + 1, col - 1, valA, foundPairs);
+
+            if (col == Cols - 1 && row < Rows - 1)
+            {
+                var j = (row + 1) * Cols;
+                var valB = _boardValues[j];
+
+                if (valA == valB || valA + valB == 10)
+                {
+                    var pair = i < j ? (i, j) : (j, i);
+                    foundPairs.Add(pair);
+                }
+            }
         }
 
         Debug.Log("==== ALL MATCHES FOUND ====");
