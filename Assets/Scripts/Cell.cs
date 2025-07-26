@@ -34,12 +34,32 @@ public class Cell : MonoBehaviour
         _text.color = Utils.GetHexColor(isActive ? "#1E5564" : "#D1D9D4");
     }
 
-    public void Select() => AnimateScale(Vector3.one);
-    public void Deselect() => AnimateScale(Vector3.zero);
-
-    private void AnimateScale(Vector3 target)
+    public void Select()
     {
         _background.transform.DOKill();
-        _background.transform.DOScale(target, 0.2f).SetEase(Ease.OutBack);
+        _background.transform.DOScale(Vector3.one, 0.25f).SetEase(Ease.OutBack);
+        _background.GetComponent<Image>().DOFade(1f, 0.2f).SetEase(Ease.OutSine);
+    }
+
+    public void Deselect()
+    {
+        _background.transform.DOKill();
+        _background.transform.DOScale(Vector3.zero, 0.25f).SetEase(Ease.InBack);
+        _background.GetComponent<Image>().DOFade(0f, 0.2f).SetEase(Ease.InSine);
+    }
+
+    public void ShakeBlockCell()
+    {
+        _text.rectTransform.DOKill();
+        _text.rectTransform.DOPunchPosition(new(-15f, 0, 0), 0.2f, 20, -15f, true);
+    }
+
+    public void NotMatchDeselect()
+    {
+        DOTween.Sequence()
+            .Append(_background.transform.DOScale(Vector3.one, 0.25f).SetEase(Ease.OutBack))
+            .Join(_background.GetComponent<Image>().DOFade(1f, 0.2f).SetEase(Ease.OutSine))
+            .Append(_background.transform.DOScale(Vector3.zero, 0.25f).SetEase(Ease.InBack))
+            .Join(_background.GetComponent<Image>().DOFade(0f, 0.2f).SetEase(Ease.InSine));
     }
 }

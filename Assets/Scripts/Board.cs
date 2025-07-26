@@ -261,68 +261,85 @@ public class Board : Singleton<Board>
     #endregion
 
     #region CheckMatch
-    private bool CanMatch(Cell a, Cell b)
+    private bool CanMatch(Cell selectedCell, Cell targetCell)
     {
-        if (a == null || b == null || a == b)
+        if (selectedCell == null || targetCell == null || selectedCell == targetCell)
             return false;
 
-        var valueA = a.Value;
-        var valueB = b.Value;
-        var indexA = a.Index;
-        var indexB = b.Index;
+        var indexA = selectedCell.Index;
+        var indexB = targetCell.Index;
 
-        // Điều kiện 1: Giống nhau hoặc tổng = 10
+        var valueA = selectedCell.Value;
+        var valueB = targetCell.Value;
+
+        // Điều kiện 1: Cùng số hoặc tổng = 10
         if (!(valueA == valueB || valueA + valueB == 10))
             return false;
 
-        int rowA = indexA / 9, colA = indexA % 9;
-        int rowB = indexB / 9, colB = indexB % 9;
+        // Điều kiện 2: Trên cùng hàng, cột, hoặc chéo và không bị chặn
+        var rowA = indexA / 9;
+        var colA = indexA % 9;
+        var rowB = indexB / 9;
+        var colB = indexB % 9;
 
-        var deltaRow = rowB - rowA;
-        var deltaCol = colB - colA;
+        var dRow = rowB - rowA;
+        var dCol = colB - colA;
 
-        // Điều kiện 2: Trên cùng hàng / cột / chéo
-        if (rowA == rowB || colA == colB || Mathf.Abs(deltaRow) == Mathf.Abs(deltaCol))
+        if (rowA == rowB || colA == colB || Mathf.Abs(dRow) == Mathf.Abs(dCol))
         {
-            var stepRow = Mathf.Clamp(deltaRow, -1, 1);
-            var stepCol = Mathf.Clamp(deltaCol, -1, 1);
+            var stepRow = Mathf.Clamp(dRow, -1, 1);
+            var stepCol = Mathf.Clamp(dCol, -1, 1);
 
-            var currRow = rowA + stepRow;
-            var currCol = colA + stepCol;
+            var row = rowA + stepRow;
+            var col = colA + stepCol;
+            var hasBlock = false;
 
-            while (currRow != rowB || currCol != colB)
+            while (row != rowB || col != colB)
             {
-                var currIndex = currRow * 9 + currCol;
-                if (currIndex >= 0 && currIndex < _cells.Count && _cells[currIndex].IsActive)
-                    return false;
+                var index = row * 9 + col;
 
-                currRow += stepRow;
-                currCol += stepCol;
+                if (_cells[index].IsActive)
+                {
+                    _cells[index].ShakeBlockCell();
+                    hasBlock = true;
+                }
+
+                row += stepRow;
+                col += stepCol;
+            }
+
+            if (hasBlock)
+            {
+                targetCell.NotMatchDeselect();
+                return false;
             }
 
             return true;
         }
 
-        // Điều kiện 3: Nằm liên tiếp qua các ô trống (zero-path)
-        if (IsConnectedByEmptyCells(indexA, indexB))
-            return true;
+        // Điều kiện 3: Nằm liên tiếp trong list một chiều và không bị chặn
+        var min = Mathf.Min(indexA, indexB);
+        var max = Mathf.Max(indexA, indexB);
+        var blocked = false;
 
-        return false;
-    }
-
-    private bool IsConnectedByEmptyCells(int fromIndex, int toIndex)
-    {
-        var start = Mathf.Min(fromIndex, toIndex);
-        var end = Mathf.Max(fromIndex, toIndex);
-
-        for (int i = start + 1; i < end; i++)
+        for (var i = min + 1; i < max; i++)
         {
             if (_cells[i].IsActive)
-                return false;
+            {
+                _cells[i].ShakeBlockCell();
+                blocked = true;
+            }
+        }
+
+        if (blocked)
+        {
+            targetCell.NotMatchDeselect();
+            return false;
         }
 
         return true;
     }
+
     #endregion
 
     #region Cell Interaction
@@ -334,34 +351,39 @@ public class Board : Singleton<Board>
         {
             _selectedCellIndex = index;
             _cells[index].Select();
+            return;
+        }
+
+        var targetCell = _cells[index];
+        var selectedCell = _cells[_selectedCellIndex];
+
+        if (_selectedCellIndex == index)
+        {
+            _selectedCellIndex = -1;
+            selectedCell.Deselect();
+            return;
+        }
+
+        if (CanMatch(selectedCell, targetCell))
+        {
+            selectedCell.SetState(false, selectedCell.Value);
+            targetCell.SetState(false, targetCell.Value);
+            targetCell.Select();
+
+            _selectedCellIndex = -1;
         }
         else
         {
-            if (_selectedCellIndex == index)
+            selectedCell.Deselect();
+
+            if (selectedCell.Value != targetCell.Value && selectedCell.Value + targetCell.Value != 10)
             {
-                _selectedCellIndex = -1;
-                _cells[index].Deselect();
+                _selectedCellIndex = index;
+                targetCell.Select();
             }
             else
             {
-                var selectedCell = _cells[_selectedCellIndex];
-                var targetCell = _cells[index];
-
-                if (CanMatch(selectedCell, targetCell))
-                {
-                    _selectedCellIndex = -1;
-
-                    targetCell.Select();
-                    targetCell.SetState(false, targetCell.Value);
-                    selectedCell.SetState(false, selectedCell.Value);
-                }
-                else
-                {
-                    _selectedCellIndex = index;
-
-                    selectedCell.Deselect();
-                    targetCell.Select();
-                }
+                _selectedCellIndex = -1;
             }
         }
     }
