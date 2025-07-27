@@ -57,10 +57,10 @@ public class StageManager : Singleton<StageManager>
 
         for (int i = 0; i < GenCells; i++)
         {
-            var obj = Instantiate(_cellPrefab, _container);
-            var cell = obj.GetComponent<Cell>();
-
+            var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
+            cell.name = "Cell";
             cell.SetState(true, _boardValues[i]);
+
             Board.Instance.GetCells().Add(cell);
         }
     }
@@ -259,4 +259,23 @@ public class StageManager : Singleton<StageManager>
     }
     #endregion
 
+    #region Clone Cells
+    public void CloneCells()
+    {
+        var originalCells = Board.Instance.GetCells();
+        var cellsCopy = originalCells.ToList();
+
+        foreach (var cell in cellsCopy)
+        {
+            if (!cell.IsActive) continue;
+
+            var clone = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
+            clone.name = "Cell";
+            clone.SetState(true, cell.Value);
+
+            originalCells.Add(clone);
+        }
+    }
+
+    #endregion
 }

@@ -96,7 +96,7 @@ public class Board : Singleton<Board>
 
     private void CheckClearRow()
     {
-        var totalRows = _cells.Count / BoardCols;
+        var totalRows = Mathf.CeilToInt((float)_cells.Count / BoardCols);
         var clearedRows = new List<int>();
 
         for (var row = 0; row < totalRows; row++)
@@ -105,6 +105,8 @@ public class Board : Singleton<Board>
             for (var col = 0; col < BoardCols; col++)
             {
                 var index = row * BoardCols + col;
+                if (index >= _cells.Count) break;
+
                 if (_cells[index].IsActive)
                 {
                     isEmpty = false;
@@ -120,43 +122,45 @@ public class Board : Singleton<Board>
         StageManager.Instance.SetGridLayout(false);
         AudioManager.Instance.PlaySFX("clear_row");
 
-        var finalSeq = DOTween.Sequence();
-        finalSeq.AppendCallback(() =>
+        var seq = DOTween.Sequence();
+        seq.AppendCallback(() =>
         {
             foreach (var row in clearedRows)
             {
                 for (var col = 0; col < BoardCols; col++)
                 {
                     var index = row * BoardCols + col;
+                    if (index >= _cells.Count) break;
+
                     _cells[index].HideTextTween();
                 }
             }
         });
 
-        finalSeq.AppendInterval(0.2f);
-        finalSeq.AppendCallback(() =>
+        seq.AppendInterval(0.2f);
+        seq.AppendCallback(() =>
         {
             for (var i = 0; i < _cells.Count; i++)
             {
-                var cell = _cells[i];
                 var row = i / BoardCols;
                 var shift = clearedRows.Count(r => row > r);
 
-                if (shift > 0) cell.ShiftCellUpTween(shift);
+                if (shift > 0) _cells[i].ShiftCellUpTween(shift);
             }
         });
 
-        finalSeq.AppendInterval(0.25f);
-        finalSeq.AppendCallback(() =>
+        seq.AppendInterval(0.25f);
+        seq.AppendCallback(() =>
         {
             foreach (var row in clearedRows.OrderByDescending(r => r))
             {
-                for (var col = BoardCols - 1; col >= 0; col--)
-                {
-                    var index = row * BoardCols + col;
+                var start = row * BoardCols;
+                var end = Mathf.Min(start + BoardCols, _cells.Count);
 
-                    Destroy(_cells[index].gameObject);
-                    _cells.RemoveAt(index);
+                for (int i = end - 1; i >= start; i--)
+                {
+                    Destroy(_cells[i].gameObject);
+                    _cells.RemoveAt(i);
                 }
             }
 
