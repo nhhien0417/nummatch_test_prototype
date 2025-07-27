@@ -54,8 +54,6 @@ public class StageManager : Singleton<StageManager>
             var cell = obj.GetComponent<Cell>();
 
             cell.SetState(true, _boardValues[i]);
-            cell.SetIndex(i);
-
             Board.Instance.GetCells().Add(cell);
         }
     }

@@ -9,21 +9,16 @@ public class Cell : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _text;
     [SerializeField] private Button _button;
 
-    private int _index;
     private int _value;
     private bool _isActive;
 
-    public int Index => _index;
     public int Value => _value;
     public bool IsActive => _isActive;
 
     public void OnClick()
     {
-        if (_isActive)
-            Board.Instance.OnCellSelected(_index);
+        if (_isActive) Board.Instance.OnCellSelected(this);
     }
-
-    public void SetIndex(int index) => _index = index;
 
     public void SetState(bool isActive, int value = 0)
     {

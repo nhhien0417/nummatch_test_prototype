@@ -5,6 +5,7 @@ public class Board : Singleton<Board>
 {
     private List<Cell> _cells = new();
     private int _selectedCellIndex = -1;
+    private const int BoardCols = 9;
 
     public List<Cell> GetCells()
     {
@@ -17,8 +18,8 @@ public class Board : Singleton<Board>
         if (selectedCell == null || targetCell == null || selectedCell == targetCell)
             return false;
 
-        var indexA = selectedCell.Index;
-        var indexB = targetCell.Index;
+        var indexA = _cells.IndexOf(selectedCell);
+        var indexB = _cells.IndexOf(targetCell);
 
         var valueA = selectedCell.Value;
         var valueB = targetCell.Value;
@@ -91,11 +92,42 @@ public class Board : Singleton<Board>
         return true;
     }
 
+    private void CheckClearRow()
+    {
+        var totalRows = _cells.Count / BoardCols;
+
+        for (var row = totalRows - 1; row >= 0; row--)
+        {
+            var isEmpty = true;
+
+            for (var col = 0; col < BoardCols; col++)
+            {
+                var index = row * BoardCols + col;
+                if (_cells[index].IsActive)
+                {
+                    isEmpty = false;
+                    break;
+                }
+            }
+
+            if (isEmpty)
+            {
+                for (var col = BoardCols - 1; col >= 0; col--)
+                {
+                    var index = row * BoardCols + col;
+                    Destroy(_cells[index].gameObject);
+                    _cells.RemoveAt(index);
+                }
+            }
+        }
+    }
     #endregion
 
     #region Cell Interaction
-    public void OnCellSelected(int index)
+    public void OnCellSelected(Cell cell)
     {
+        var index = _cells.IndexOf(cell);
+
         if (_selectedCellIndex == -1)
         {
             _selectedCellIndex = index;
@@ -116,10 +148,11 @@ public class Board : Singleton<Board>
 
         if (CanMatch(selectedCell, targetCell))
         {
+            _selectedCellIndex = -1;
+
             selectedCell.SetState(false, selectedCell.Value);
             targetCell.SetState(false, targetCell.Value);
-
-            _selectedCellIndex = -1;
+            CheckClearRow();
         }
         else
         {
