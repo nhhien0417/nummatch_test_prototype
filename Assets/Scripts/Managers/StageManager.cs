@@ -15,6 +15,12 @@ public class StageManager : Singleton<StageManager>
     private List<(int, int)> _matchPairs = new();
     private int[] _boardValues = new int[GenCells];
 
+    public void SetGridLayout(bool enabled)
+    {
+        _container.GetComponent<GridLayoutGroup>().enabled = enabled;
+    }
+
+    #region Generate Board
     public void GenerateBoard()
     {
         var attempt = 0;
@@ -25,7 +31,7 @@ public class StageManager : Singleton<StageManager>
             {
                 SpawnCells();
                 PrintMatchPairs();
-                ScanAllMatches();
+                PrintAllMatches();
 
                 Debug.Log($"✅ Generated after {attempt} attempts");
                 return;
@@ -181,7 +187,9 @@ public class StageManager : Singleton<StageManager>
 
         return neighbors;
     }
+    #endregion
 
+    #region Debugging
     private void PrintMatchPairs()
     {
         Debug.Log("==== MATCH PAIRS ====");
@@ -196,7 +204,7 @@ public class StageManager : Singleton<StageManager>
         }
     }
 
-    private void ScanAllMatches()
+    private void PrintAllMatches()
     {
         var foundPairs = new HashSet<(int, int)>();
 
@@ -249,9 +257,6 @@ public class StageManager : Singleton<StageManager>
             foundPairs.Add(pair);
         }
     }
+    #endregion
 
-    public void SetGridLayout(bool enabled)
-    {
-        _container.GetComponent<GridLayoutGroup>().enabled = enabled;
-    }
 }
