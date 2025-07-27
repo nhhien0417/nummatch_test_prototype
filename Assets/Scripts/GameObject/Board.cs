@@ -121,32 +121,32 @@ public class Board : Singleton<Board>
         AudioManager.Instance.PlaySFX("clear_row");
 
         var finalSeq = DOTween.Sequence();
-        var hideSeq = DOTween.Sequence();
-        var shiftSeq = DOTween.Sequence();
-
-        foreach (var row in clearedRows)
+        finalSeq.AppendCallback(() =>
         {
-            for (var col = 0; col < BoardCols; col++)
+            foreach (var row in clearedRows)
             {
-                var index = row * BoardCols + col;
-                hideSeq.Join(_cells[index].HideTextTween());
+                for (var col = 0; col < BoardCols; col++)
+                {
+                    var index = row * BoardCols + col;
+                    _cells[index].HideTextTween();
+                }
             }
-        }
+        });
 
-        foreach (var cell in _cells)
+        finalSeq.AppendInterval(0.2f);
+        finalSeq.AppendCallback(() =>
         {
-            var index = _cells.IndexOf(cell);
-            var row = index / BoardCols;
-            var shift = clearedRows.Count(clearedRow => row > clearedRow);
-
-            if (shift > 0)
+            for (var i = 0; i < _cells.Count; i++)
             {
-                shiftSeq.Join(cell.ShiftCellUpTween(shift));
-            }
-        }
+                var cell = _cells[i];
+                var row = i / BoardCols;
+                var shift = clearedRows.Count(r => row > r);
 
-        finalSeq.Append(hideSeq);
-        finalSeq.Append(shiftSeq);
+                if (shift > 0) cell.ShiftCellUpTween(shift);
+            }
+        });
+
+        finalSeq.AppendInterval(0.25f);
         finalSeq.AppendCallback(() =>
         {
             foreach (var row in clearedRows.OrderByDescending(r => r))
@@ -154,14 +154,12 @@ public class Board : Singleton<Board>
                 for (var col = BoardCols - 1; col >= 0; col--)
                 {
                     var index = row * BoardCols + col;
+
                     Destroy(_cells[index].gameObject);
                     _cells.RemoveAt(index);
                 }
             }
-        });
 
-        finalSeq.OnComplete(() =>
-        {
             StageManager.Instance.SetGridLayout(true);
         });
     }

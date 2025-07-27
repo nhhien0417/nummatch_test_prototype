@@ -60,19 +60,19 @@ public class Cell : MonoBehaviour
             .Join(_background.GetComponent<Image>().DOFade(0f, 0.2f).SetEase(Ease.InSine));
     }
 
-    public Tween HideTextTween()
+    public void HideTextTween()
     {
         _text.DOKill();
-        return _text.DOFade(0f, 0.2f).SetEase(Ease.InSine);
+        _text.DOFade(0f, 0.2f).SetEase(Ease.InSine);
     }
 
-    public Tween ShiftCellUpTween(int rows)
+    public void ShiftCellUpTween(int rows)
     {
         var rect = GetComponent<RectTransform>();
         var shiftY = rows * rect.rect.height;
         var targetPos = rect.anchoredPosition + new Vector2(0, shiftY);
 
         rect.DOKill();
-        return rect.DOAnchorPos(targetPos, 0.25f).SetEase(Ease.OutCubic);
+        rect.DOAnchorPos(targetPos, 0.25f).SetEase(Ease.OutCubic);
     }
 }
