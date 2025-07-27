@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 
 public class Board : Singleton<Board>
@@ -95,11 +97,11 @@ public class Board : Singleton<Board>
     private void CheckClearRow()
     {
         var totalRows = _cells.Count / BoardCols;
+        var clearedRows = new List<int>();
 
-        for (var row = totalRows - 1; row >= 0; row--)
+        for (var row = 0; row < totalRows; row++)
         {
             var isEmpty = true;
-
             for (var col = 0; col < BoardCols; col++)
             {
                 var index = row * BoardCols + col;
@@ -110,7 +112,42 @@ public class Board : Singleton<Board>
                 }
             }
 
-            if (isEmpty)
+            if (isEmpty) clearedRows.Add(row);
+        }
+
+        if (clearedRows.Count == 0) return;
+        StageManager.Instance.SetGridLayout(false);
+
+        var finalSeq = DOTween.Sequence();
+        var hideSeq = DOTween.Sequence();
+        var shiftSeq = DOTween.Sequence();
+
+        foreach (var row in clearedRows)
+        {
+            for (var col = 0; col < BoardCols; col++)
+            {
+                var index = row * BoardCols + col;
+                hideSeq.Join(_cells[index].HideTextTween());
+            }
+        }
+
+        foreach (var cell in _cells)
+        {
+            var index = _cells.IndexOf(cell);
+            var row = index / BoardCols;
+            var shift = clearedRows.Count(clearedRow => row > clearedRow);
+
+            if (shift > 0)
+            {
+                shiftSeq.Join(cell.ShiftCellUpTween(shift));
+            }
+        }
+
+        finalSeq.Append(hideSeq);
+        finalSeq.Append(shiftSeq);
+        finalSeq.AppendCallback(() =>
+        {
+            foreach (var row in clearedRows.OrderByDescending(r => r))
             {
                 for (var col = BoardCols - 1; col >= 0; col--)
                 {
@@ -119,7 +156,12 @@ public class Board : Singleton<Board>
                     _cells.RemoveAt(index);
                 }
             }
-        }
+        });
+
+        finalSeq.OnComplete(() =>
+        {
+            StageManager.Instance.SetGridLayout(true);
+        });
     }
     #endregion
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class StageManager : Singleton<StageManager>
 {
@@ -64,8 +65,8 @@ public class StageManager : Singleton<StageManager>
         _matchPairs = PickMatchPairs(pairsCount);
 
         var valuePool = new List<int>();
-        for (var i = 1; i <= 9; i++)
-            for (var j = 0; j < 3; j++)
+        for (var i = 1; i <= GenCols; i++)
+            for (var j = 0; j < GenRows; j++)
                 valuePool.Add(i);
 
         for (var index = 0; index < GenCells; index++)
@@ -247,5 +248,10 @@ public class StageManager : Singleton<StageManager>
             var pair = i < j ? (i, j) : (j, i);
             foundPairs.Add(pair);
         }
+    }
+
+    public void SetGridLayout(bool enabled)
+    {
+        _container.GetComponent<GridLayoutGroup>().enabled = enabled;
     }
 }
