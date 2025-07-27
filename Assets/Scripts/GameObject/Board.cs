@@ -6,11 +6,6 @@ public class Board : Singleton<Board>
     private List<Cell> _cells = new();
     private int _selectedCellIndex = -1;
 
-    private void Start()
-    {
-        StageManager.Instance.GenerateBoard();
-    }
-
     public List<Cell> GetCells()
     {
         return _cells;
