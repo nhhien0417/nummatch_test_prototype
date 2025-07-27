@@ -31,6 +31,8 @@ public class Cell : MonoBehaviour
 
     public void Select()
     {
+        AudioManager.Instance.PlaySFX("choose_number");
+
         _background.transform.DOKill();
         _background.transform.DOScale(Vector3.one, 0.25f).SetEase(Ease.OutBack);
         _background.GetComponent<Image>().DOFade(1f, 0.2f).SetEase(Ease.OutSine);

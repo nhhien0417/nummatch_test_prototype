@@ -116,7 +116,9 @@ public class Board : Singleton<Board>
         }
 
         if (clearedRows.Count == 0) return;
+
         StageManager.Instance.SetGridLayout(false);
+        AudioManager.Instance.PlaySFX("clear_row");
 
         var finalSeq = DOTween.Sequence();
         var hideSeq = DOTween.Sequence();
@@ -194,7 +196,9 @@ public class Board : Singleton<Board>
 
             selectedCell.SetState(false, selectedCell.Value);
             targetCell.SetState(false, targetCell.Value);
+
             CheckClearRow();
+            AudioManager.Instance.PlaySFX("match_cell");
         }
         else
         {
