@@ -1,10 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Board : Singleton<Board>
 {
+    [SerializeField] private GameObject _topFade, _bottomFade;
+    [SerializeField] private RectTransform _boardContainer;
+
     private List<Cell> _cells = new();
     private int _selectedCellIndex = -1;
     private const int BoardCols = 9;
@@ -164,6 +169,7 @@ public class Board : Singleton<Board>
                 }
             }
 
+            UpdateContainerHeight();
             StageManager.Instance.SetGridLayout(true);
         });
     }
@@ -214,6 +220,30 @@ public class Board : Singleton<Board>
                 _selectedCellIndex = -1;
             }
         }
+    }
+    #endregion
+
+    #region Scroll View
+    public void UpdateContainerHeight()
+    {
+        var totalRows = Mathf.CeilToInt((float)_cells.Count / BoardCols);
+        var targetContentHeight = (totalRows + 3) * 100f;
+        var viewportHeight = GetComponent<RectTransform>().sizeDelta.y;
+
+        var finalHeight = Mathf.Ceil(Mathf.Max(targetContentHeight, viewportHeight) / 100f) * 100f;
+        _boardContainer.sizeDelta = new Vector2(_boardContainer.sizeDelta.x, finalHeight);
+
+        GetComponent<ScrollRect>().vertical = targetContentHeight > viewportHeight;
+    }
+
+    public void HandleScrollPosition(Vector2 normalizedPosition)
+    {
+        const float threshold = 0.01f;
+        var isAtTop = normalizedPosition.y >= 1f - threshold;
+        var isAtBottom = normalizedPosition.y <= threshold;
+
+        _topFade.SetActive(!isAtTop);
+        _bottomFade.SetActive(!isAtBottom);
     }
     #endregion
 }

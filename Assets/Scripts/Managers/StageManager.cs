@@ -33,6 +33,7 @@ public class StageManager : Singleton<StageManager>
                 PrintMatchPairs();
                 PrintAllMatches();
 
+                Board.Instance.UpdateContainerHeight();
                 Debug.Log($"✅ Generated after {attempt} attempts");
                 return;
             }
@@ -277,5 +278,7 @@ public class StageManager : Singleton<StageManager>
         }
     }
 
+        Board.Instance.UpdateContainerHeight();
+    }
     #endregion
 }
