@@ -15,6 +15,17 @@ public class StageManager : Singleton<StageManager>
     private List<(int, int)> _matchPairs = new();
     private int[] _boardValues = new int[GenCells];
 
+    private int _currentStage;
+    public int CurrentStage => _currentStage;
+
+    public void UpdateNewStage(int stage)
+    {
+        _currentStage = stage;
+
+        GenerateBoard();
+        GameplayUI.Instance.UpdateStageText();
+    }
+
     public void SetGridLayout(bool enabled)
     {
         _container.GetComponent<GridLayoutGroup>().enabled = enabled;
@@ -38,7 +49,7 @@ public class StageManager : Singleton<StageManager>
     public void GenerateBoard()
     {
         var attempt = 0;
-        var matchPairs = GameManager.Instance.CurrentStage switch
+        var matchPairs = _currentStage switch
         {
             1 => 15,
             2 => 10,

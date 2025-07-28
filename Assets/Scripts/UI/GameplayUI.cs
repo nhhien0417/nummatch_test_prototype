@@ -13,6 +13,6 @@ public class GameplayUI : Singleton<GameplayUI>
 
     public void UpdateStageText()
     {
-        _stageText.text = $"Stage: {GameManager.Instance.CurrentStage}";
+        _stageText.text = $"Stage: {StageManager.Instance.CurrentStage}";
     }
 }

@@ -6,7 +6,7 @@ public class HomeUI : Singleton<HomeUI>
     {
         SceneManager.LoadSceneAsync("Gameplay").completed += op =>
         {
-            GameManager.Instance.UpdateNewStage(1);
+            StageManager.Instance.UpdateNewStage(1);
         };
     }
 }
