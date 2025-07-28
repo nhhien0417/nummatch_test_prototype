@@ -26,10 +26,10 @@ public class StageManager : Singleton<StageManager>
         cell.name = "Cell";
         cell.SetState(true, value);
 
-        MEC.Timing.CallDelayed(1f, () =>
-        {
-            // cell.Spawn();
-        });
+        // MEC.Timing.CallDelayed(1f, () =>
+        // {
+        //     cell.Spawn();
+        // });
 
         return cell;
     }
