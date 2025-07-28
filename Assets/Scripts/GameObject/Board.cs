@@ -164,6 +164,7 @@ public class Board : Singleton<Board>
 
                 for (int i = end - 1; i >= start; i--)
                 {
+                    _cells[i].transform.DOKill();
                     Destroy(_cells[i].gameObject);
                     _cells.RemoveAt(i);
                 }
