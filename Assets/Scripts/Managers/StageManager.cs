@@ -38,23 +38,23 @@ public class StageManager : Singleton<StageManager>
     public void GenerateBoard()
     {
         var attempt = 0;
-
-        while (true)
+        var matchPairs = GameManager.Instance.CurrentStage switch
         {
-            if (TryGenerateBoard(15))
-            {
-                SpawnCells();
-                PrintMatchPairs();
-                PrintAllMatches();
+            1 => 15,
+            2 => 10,
+            _ => 5
+        };
 
-                Board.Instance.UpdateContainerHeight();
-                Debug.Log($"✅ Generated after {attempt} attempts");
-                return;
-            }
+        while (!TryGenerateBoard(matchPairs)) attempt++;
 
-            attempt++;
-        }
+        SpawnCells();
+        PrintMatchPairs();
+        PrintAllMatches();
+
+        Board.Instance.UpdateContainerHeight();
+        Debug.Log($"✅ Generated after {attempt} attempts");
     }
+
 
     private void Reset()
     {

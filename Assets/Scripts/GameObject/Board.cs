@@ -19,7 +19,7 @@ public class Board : Singleton<Board>
         return _cells;
     }
 
-    #region CheckMatch
+    #region Checker
     private bool CanMatch(Cell selectedCell, Cell targetCell)
     {
         if (selectedCell == null || targetCell == null || selectedCell == targetCell)
@@ -170,9 +170,17 @@ public class Board : Singleton<Board>
                 }
             }
 
+            CheckClearBoard();
             UpdateContainerHeight();
             StageManager.Instance.SetGridLayout(true);
         });
+    }
+
+    private void CheckClearBoard()
+    {
+        if (_cells.Count > 0) return;
+
+        GameManager.Instance.UpdateNewStage(GameManager.Instance.CurrentStage + 1);
     }
     #endregion
 
