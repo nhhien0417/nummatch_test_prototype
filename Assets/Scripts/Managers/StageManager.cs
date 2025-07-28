@@ -20,6 +20,20 @@ public class StageManager : Singleton<StageManager>
         _container.GetComponent<GridLayoutGroup>().enabled = enabled;
     }
 
+    private Cell SpawnCell(int value)
+    {
+        var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
+        cell.name = "Cell";
+        cell.SetState(true, value);
+
+        MEC.Timing.CallDelayed(1f, () =>
+        {
+            // cell.Spawn();
+        });
+
+        return cell;
+    }
+
     #region Generate Board
     public void GenerateBoard()
     {
@@ -58,10 +72,7 @@ public class StageManager : Singleton<StageManager>
 
         for (int i = 0; i < GenCells; i++)
         {
-            var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
-            cell.name = "Cell";
-            cell.SetState(true, _boardValues[i]);
-
+            var cell = SpawnCell(_boardValues[i]);
             Board.Instance.GetCells().Add(cell);
         }
     }
@@ -270,13 +281,9 @@ public class StageManager : Singleton<StageManager>
         {
             if (!cell.IsActive) continue;
 
-            var clone = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
-            clone.name = "Cell";
-            clone.SetState(true, cell.Value);
-
+            var clone = SpawnCell(cell.Value);
             originalCells.Add(clone);
         }
-    }
 
         Board.Instance.UpdateContainerHeight();
     }

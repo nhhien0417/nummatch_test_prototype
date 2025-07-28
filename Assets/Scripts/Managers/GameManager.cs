@@ -1,9 +1,5 @@
-using UnityEngine;
 
-public class GameManager : MonoBehaviour
+public class GameManager : SingletonPersistent<GameManager>
 {
-    private void Start()
-    {
-        StageManager.Instance.GenerateBoard();
-    }
+
 }

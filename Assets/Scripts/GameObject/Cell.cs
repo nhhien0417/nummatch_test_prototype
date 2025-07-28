@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class Cell : MonoBehaviour
 {
-    [SerializeField] private GameObject _background;
+    [SerializeField] private GameObject _background, _foreground;
     [SerializeField] private TextMeshProUGUI _text;
     [SerializeField] private Button _button;
 
@@ -27,6 +27,12 @@ public class Cell : MonoBehaviour
 
         _text.text = value > 0 ? value.ToString() : "";
         _text.color = Utils.GetHexColor(isActive ? "#1E5564" : "#D1D9D4");
+    }
+
+    public void Spawn()
+    {
+        _foreground.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.InBack);
+        _foreground.GetComponent<Image>().DOFade(0f, 0.5f).SetEase(Ease.InSine);
     }
 
     public void Select()
