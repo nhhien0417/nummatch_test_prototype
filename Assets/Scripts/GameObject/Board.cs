@@ -13,6 +13,7 @@ public class Board : Singleton<Board>
     private int _selectedCellIndex = -1;
     private const int BoardCols = 9;
 
+    public int TotalRows => Mathf.CeilToInt((float)_cells.Count / BoardCols);
     public List<Cell> GetCells()
     {
         return _cells;
@@ -100,10 +101,9 @@ public class Board : Singleton<Board>
 
     private void CheckClearRow()
     {
-        var totalRows = Mathf.CeilToInt((float)_cells.Count / BoardCols);
         var clearedRows = new List<int>();
 
-        for (var row = 0; row < totalRows; row++)
+        for (var row = 0; row < TotalRows; row++)
         {
             var isEmpty = true;
             for (var col = 0; col < BoardCols; col++)
@@ -234,8 +234,7 @@ public class Board : Singleton<Board>
     #region Scroll View
     public void UpdateContainerHeight()
     {
-        var totalRows = Mathf.CeilToInt((float)_cells.Count / BoardCols);
-        var targetContentHeight = (totalRows + 3) * 100f;
+        var targetContentHeight = (TotalRows + 3) * 100f;
         var viewportHeight = GetComponent<RectTransform>().sizeDelta.y;
 
         var finalHeight = Mathf.Ceil(Mathf.Max(targetContentHeight, viewportHeight) / 100f) * 100f;
