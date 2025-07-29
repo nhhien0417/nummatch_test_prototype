@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class GameManager : SingletonPersistent<GameManager>
@@ -11,14 +13,16 @@ public class GameManager : SingletonPersistent<GameManager>
     {
         _gemProgress.Clear();
 
-        foreach (var gem in GemManager.Instance.GetGemEntries())
-        {
-            if (gem.Key == GemType.None) continue;
+        var gemTypes = GemManager.Instance.GetGemEntries().Keys.Where(type => type != GemType.None).ToList();
+        var countToPick = Random.Range(1, gemTypes.Count + 1);
+        var selectedTypes = gemTypes.OrderBy(_ => Random.value).Take(countToPick);
 
+        foreach (var type in selectedTypes)
+        {
             _gemProgress.Add(new GemProgress
             {
-                Type = gem.Key,
-                RequiredAmount = 10,
+                Type = type,
+                RequiredAmount = Random.Range(1, 4),
                 Collected = 0
             });
         }
