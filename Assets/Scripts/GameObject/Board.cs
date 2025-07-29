@@ -210,8 +210,8 @@ public class Board : Singleton<Board>
         {
             _selectedCellIndex = -1;
 
-            selectedCell.SetState(false, selectedCell.Value);
-            targetCell.SetState(false, targetCell.Value);
+            selectedCell.SetState(false, selectedCell.Value, GemType.None);
+            targetCell.SetState(false, targetCell.Value, GemType.None);
 
             CheckClearRow();
             AudioManager.Instance.PlaySFX("match_cell");

@@ -20,7 +20,7 @@ public class GameplayUI : Singleton<GameplayUI>
 
     public void SetupGems()
     {
-        foreach (var gemProgress in GemManager.Instance.GemProgress)
+        foreach (var gemProgress in GemManager.Instance.GemProgresses)
         {
             var gemObject = Instantiate(_gemPrefab, _gemContainer).GetComponent<Gem>();
             gemObject.UpdateGemInfo(gemProgress.RequiredAmount, GemManager.Instance.GetGemEntries().TryGetValue(gemProgress.Type, out var sprite) ? sprite : null);

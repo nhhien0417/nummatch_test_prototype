@@ -7,8 +7,8 @@ public class GemManager : SingletonPersistent<GemManager>
     [SerializeField] private List<GemEntry> _gemEntries;
 
     private Dictionary<GemType, Sprite> _gemDict;
-    private List<GemProgress> _gemProgress = new();
-    public List<GemProgress> GemProgress => _gemProgress;
+    private List<GemProgress> _gemProgresses = new();
+    public List<GemProgress> GemProgresses => _gemProgresses;
 
     public Dictionary<GemType, Sprite> GetGemEntries()
     {
@@ -21,16 +21,19 @@ public class GemManager : SingletonPersistent<GemManager>
         return _gemDict;
     }
 
+    public List<GemType> AvailableGemTypes => _gemProgresses.Where(g => g.Collected < g.RequiredAmount)
+                                                            .Select(g => g.Type).ToList();
+
     public void GenerateGemProgress()
     {
-        _gemProgress.Clear();
+        _gemProgresses.Clear();
 
         var gemTypes = GetGemEntries().Keys.ToList();
         int countToPick = Random.Range(1, gemTypes.Count + 1);
 
         foreach (var type in gemTypes.OrderBy(_ => Random.value).Take(countToPick))
         {
-            _gemProgress.Add(new GemProgress(type, Random.Range(1, 4)));
+            _gemProgresses.Add(new GemProgress(type, Random.Range(1, 4)));
         }
     }
 }

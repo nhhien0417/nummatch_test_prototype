@@ -21,7 +21,7 @@ public class Cell : MonoBehaviour
         if (_isActive) Board.Instance.OnCellSelected(this);
     }
 
-    public void SetState(bool isActive, int value = 0, GemType gemType = GemType.None)
+    public void SetState(bool isActive, int value, GemType gemType)
     {
         _value = value;
         _isActive = isActive;

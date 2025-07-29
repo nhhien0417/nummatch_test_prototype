@@ -33,11 +33,11 @@ public class StageManager : Singleton<StageManager>
         _container.GetComponent<GridLayoutGroup>().enabled = enabled;
     }
 
-    private Cell SpawnCell(int value)
+    private Cell SpawnCell(int value, GemType gemType)
     {
         var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
         cell.name = "Cell";
-        cell.SetState(true, value);
+        cell.SetState(true, value, gemType);
 
         return cell;
     }
@@ -58,9 +58,9 @@ public class StageManager : Singleton<StageManager>
 
         while (!TryGenerateBoard(matchPairs)) attempt++;
 
-        SpawnCells();
         PrintMatchPairs();
         PrintAllMatches();
+        SpawnCells();
 
         Board.Instance.UpdateContainerHeight();
         Debug.Log($"✅ Generated after {attempt} attempts");
@@ -81,11 +81,68 @@ public class StageManager : Singleton<StageManager>
     {
         Reset();
 
+        var spawnedGems = 0;
+        var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
+
+        var spawnGemCounter = 0;
+        var gemInterval = Mathf.CeilToInt((GenCells + 1) / 2); // Y
+
+        var forceSpawnGem = false;
+        var spawnedGemIndexes = new List<int>();
+
         for (int i = 0; i < GenCells; i++)
         {
-            var cell = SpawnCell(_boardValues[i]);
+            var value = _boardValues[i];
+            var shouldSpawnGem = false;
+            var gemTypeToSpawn = GemType.None;
+
+            if (spawnedGems < maxGems)
+            {
+                var chance = Random.Range(5f, 8f); // X%
+
+                if ((forceSpawnGem || Random.Range(0f, 100f) < chance) && IsSafeToSpawnGem(i, spawnedGemIndexes))
+                {
+                    var validGemTypes = GemManager.Instance.AvailableGemTypes;
+                    gemTypeToSpawn = validGemTypes[Random.Range(0, validGemTypes.Count)];
+                    shouldSpawnGem = true;
+                }
+            }
+
+            // Spawn cell
+            var cell = SpawnCell(value, gemTypeToSpawn);
             Board.Instance.GetCells().Add(cell);
+
+            if (shouldSpawnGem)
+            {
+                spawnedGems++;
+                spawnGemCounter = 0;
+                spawnedGemIndexes.Add(i);
+            }
+            else
+            {
+                spawnGemCounter++;
+            }
+
+            forceSpawnGem = spawnGemCounter >= gemInterval || !AnySafeIndexRemaining(i + 1, spawnedGemIndexes);
         }
+    }
+
+    private bool IsSafeToSpawnGem(int index, List<int> spawnedGemIndexes)
+    {
+        foreach (var gemIndex in spawnedGemIndexes)
+            if (_foundPairs.Contains((gemIndex, index)) || _foundPairs.Contains((index, gemIndex)))
+                return false;
+
+        return true;
+    }
+
+    private bool AnySafeIndexRemaining(int startIndex, List<int> spawnedGemIndexes)
+    {
+        for (int i = startIndex; i < GenCells; i++)
+            if (IsSafeToSpawnGem(i, spawnedGemIndexes))
+                return true;
+
+        return false;
     }
 
     private bool TryGenerateBoard(int pairsCount)
@@ -290,7 +347,7 @@ public class StageManager : Singleton<StageManager>
         {
             if (!cell.IsActive) continue;
 
-            var clone = SpawnCell(cell.Value);
+            var clone = SpawnCell(cell.Value, GemType.None);
             originalCells.Add(clone);
         }
 
