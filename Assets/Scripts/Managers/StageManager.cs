@@ -35,12 +35,7 @@ public class StageManager : Singleton<StageManager>
     {
         var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
         cell.name = "Cell";
-        cell.SetState(true, value, GemType.Pink);
-
-        // MEC.Timing.CallDelayed(1f, () =>
-        // {
-        //     cell.Spawn();
-        // });
+        cell.SetState(true, value);
 
         return cell;
     }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GemManager : SingletonPersistent<GemManager>
@@ -6,19 +7,31 @@ public class GemManager : SingletonPersistent<GemManager>
     [SerializeField] private List<GemEntry> _gemEntries;
 
     private Dictionary<GemType, Sprite> _gemDict;
+    private List<GemProgress> _gemProgress = new();
+    public List<GemProgress> GemProgress => _gemProgress;
 
     public Dictionary<GemType, Sprite> GetGemEntries()
     {
         if (_gemDict != null) return _gemDict;
-        _gemDict = new();
 
-        foreach (var entry in _gemEntries)
-        {
-            if (!_gemDict.ContainsKey(entry.Type))
-                _gemDict.Add(entry.Type, entry.Sprite);
-        }
+        _gemDict = _gemEntries.Where(e => e.Type != GemType.None)
+                              .GroupBy(e => e.Type)
+                              .ToDictionary(g => g.Key, g => g.First().Sprite);
 
         return _gemDict;
+    }
+
+    public void GenerateGemProgress()
+    {
+        _gemProgress.Clear();
+
+        var gemTypes = GetGemEntries().Keys.ToList();
+        int countToPick = Random.Range(1, gemTypes.Count + 1);
+
+        foreach (var type in gemTypes.OrderBy(_ => Random.value).Take(countToPick))
+        {
+            _gemProgress.Add(new GemProgress(type, Random.Range(1, 4)));
+        }
     }
 }
 
@@ -39,7 +52,14 @@ public enum GemType
 
 public class GemProgress
 {
-    public GemType Type;
-    public int RequiredAmount;
-    public int Collected;
+    public GemType Type { get; }
+    public int RequiredAmount { get; }
+    public int Collected { get; set; }
+
+    public GemProgress(GemType type, int requiredAmount)
+    {
+        Type = type;
+        RequiredAmount = requiredAmount;
+        Collected = 0;
+    }
 }
