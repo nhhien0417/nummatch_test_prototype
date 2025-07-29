@@ -179,7 +179,7 @@ public class Board : Singleton<Board>
     {
         if (_cells.Count > 0) return;
 
-        CellGenerator.Instance.UpdateNewStage(CellGenerator.Instance.CurrentStage + 1);
+        GameManager.Instance.UpdateNewStage(GameManager.Instance.CurrentStage + 1);
     }
     #endregion
 
