@@ -13,6 +13,8 @@ public class StageManager : Singleton<StageManager>
     private const int GenCells = GenRows * GenCols;
 
     private List<(int, int)> _matchPairs = new();
+    private HashSet<(int, int)> _foundPairs = new();
+
     private int[] _boardValues = new int[GenCells];
 
     private int _currentStage;
@@ -50,6 +52,9 @@ public class StageManager : Singleton<StageManager>
             2 => 10,
             _ => 5
         };
+
+        _matchPairs.Clear();
+        _foundPairs.Clear();
 
         while (!TryGenerateBoard(matchPairs)) attempt++;
 
@@ -224,18 +229,16 @@ public class StageManager : Singleton<StageManager>
 
     private void PrintAllMatches()
     {
-        var foundPairs = new HashSet<(int, int)>();
-
         for (var i = 0; i < GenCells; i++)
         {
             var valA = _boardValues[i];
             var row = i / GenCols;
             var col = i % GenCols;
 
-            CheckAndAddPair(i, row, col + 1, valA, foundPairs);
-            CheckAndAddPair(i, row + 1, col, valA, foundPairs);
-            CheckAndAddPair(i, row + 1, col + 1, valA, foundPairs);
-            CheckAndAddPair(i, row + 1, col - 1, valA, foundPairs);
+            CheckAndAddPair(i, row, col + 1, valA, _foundPairs);
+            CheckAndAddPair(i, row + 1, col, valA, _foundPairs);
+            CheckAndAddPair(i, row + 1, col + 1, valA, _foundPairs);
+            CheckAndAddPair(i, row + 1, col - 1, valA, _foundPairs);
 
             if (col == GenCols - 1 && row < GenRows - 1)
             {
@@ -245,14 +248,14 @@ public class StageManager : Singleton<StageManager>
                 if (valA == valB || valA + valB == 10)
                 {
                     var pair = i < j ? (i, j) : (j, i);
-                    foundPairs.Add(pair);
+                    _foundPairs.Add(pair);
                 }
             }
         }
 
         Debug.Log("==== ALL MATCHES FOUND ====");
 
-        foreach (var (a, b) in foundPairs)
+        foreach (var (a, b) in _foundPairs)
         {
             var valA = _boardValues[a];
             var valB = _boardValues[b];
