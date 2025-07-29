@@ -16,12 +16,9 @@ public class CellGenerator : Singleton<CellGenerator>
     private HashSet<(int, int)> _foundPairs = new();
 
     private int[] _boardValues = new int[GenCells];
+    private int _totalRows => Mathf.CeilToInt((float)_boardValues.Length / GenCols);
 
-    public void SetGridLayout(bool enabled)
-    {
-        _container.GetComponent<GridLayoutGroup>().enabled = enabled;
-    }
-
+    #region Update State
     private Cell SpawnCell(int value, GemType gemType)
     {
         var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
@@ -30,6 +27,32 @@ public class CellGenerator : Singleton<CellGenerator>
 
         return cell;
     }
+
+    public void SetGridLayout(bool enabled)
+    {
+        _container.GetComponent<GridLayoutGroup>().enabled = enabled;
+    }
+
+    public void UpdateBoardValues(List<Cell> newCells = null)
+    {
+        _boardValues = Board.Instance.GetCells()
+            .Concat(newCells ?? Enumerable.Empty<Cell>())
+            .Select(c => c.Value)
+            .ToArray();
+
+        // var sb = new System.Text.StringBuilder();
+        // for (int i = 0; i < _boardValues.Length; i++)
+        // {
+        //     sb.Append(_boardValues[i]);
+        //     sb.Append(' ');
+
+        //     if ((i + 1) % 9 == 0)
+        //         sb.AppendLine();
+        // }
+
+        // Debug.Log(sb.ToString());
+    }
+    #endregion
 
     #region Generate Board
     public void GenerateBoard()
@@ -42,19 +65,14 @@ public class CellGenerator : Singleton<CellGenerator>
             _ => 5
         };
 
-        _matchPairs.Clear();
-        _foundPairs.Clear();
-
         while (!TryGenerateBoard(matchPairs)) attempt++;
 
-        PrintMatchPairs();
-        PrintAllMatches();
         SpawnCells();
+        PrintMatchPairs();
 
         Board.Instance.UpdateContainerHeight();
         Debug.Log($"✅ Generated after {attempt} attempts");
     }
-
 
     private void Reset()
     {
@@ -69,6 +87,7 @@ public class CellGenerator : Singleton<CellGenerator>
     private void SpawnCells()
     {
         Reset();
+        FindAllMatches();
 
         var spawnedGems = 0;
         var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
@@ -79,7 +98,7 @@ public class CellGenerator : Singleton<CellGenerator>
         var forceSpawnGem = false;
         var spawnedGemIndexes = new List<int>();
 
-        for (int i = 0; i < GenCells; i++)
+        for (var i = 0; i < GenCells; i++)
         {
             var value = _boardValues[i];
             var shouldSpawnGem = false;
@@ -114,24 +133,6 @@ public class CellGenerator : Singleton<CellGenerator>
 
             forceSpawnGem = spawnGemCounter >= gemInterval || !AnySafeIndexRemaining(i + 1, spawnedGemIndexes);
         }
-    }
-
-    private bool IsSafeToSpawnGem(int index, List<int> spawnedGemIndexes)
-    {
-        foreach (var gemIndex in spawnedGemIndexes)
-            if (_foundPairs.Contains((gemIndex, index)) || _foundPairs.Contains((index, gemIndex)))
-                return false;
-
-        return true;
-    }
-
-    private bool AnySafeIndexRemaining(int startIndex, List<int> spawnedGemIndexes)
-    {
-        for (int i = startIndex; i < GenCells; i++)
-            if (IsSafeToSpawnGem(i, spawnedGemIndexes))
-                return true;
-
-        return false;
     }
 
     private bool TryGenerateBoard(int pairsCount)
@@ -258,7 +259,7 @@ public class CellGenerator : Singleton<CellGenerator>
     }
     #endregion
 
-    #region Debugging
+    #region Find Pairs
     private void PrintMatchPairs()
     {
         Debug.Log("==== MATCH PAIRS ====");
@@ -273,55 +274,60 @@ public class CellGenerator : Singleton<CellGenerator>
         }
     }
 
-    private void PrintAllMatches()
+    private void FindAllMatches()
     {
-        for (var i = 0; i < GenCells; i++)
+        _foundPairs.Clear();
+
+        for (var i = 0; i < _boardValues.Length; i++)
         {
             var valA = _boardValues[i];
             var row = i / GenCols;
             var col = i % GenCols;
 
-            CheckAndAddPair(i, row, col + 1, valA, _foundPairs);
-            CheckAndAddPair(i, row + 1, col, valA, _foundPairs);
-            CheckAndAddPair(i, row + 1, col + 1, valA, _foundPairs);
-            CheckAndAddPair(i, row + 1, col - 1, valA, _foundPairs);
+            CheckAndAddPair(i, row, col + 1, valA);
+            CheckAndAddPair(i, row + 1, col, valA);
+            CheckAndAddPair(i, row + 1, col + 1, valA);
+            CheckAndAddPair(i, row + 1, col - 1, valA);
 
-            if (col == GenCols - 1 && row < GenRows - 1)
+            if (col == GenCols - 1 && row < _totalRows - 1)
             {
                 var j = (row + 1) * GenCols;
-                var valB = _boardValues[j];
-
-                if (valA == valB || valA + valB == 10)
+                if (j < _boardValues.Length)
                 {
-                    var pair = i < j ? (i, j) : (j, i);
-                    _foundPairs.Add(pair);
+                    var valB = _boardValues[j];
+                    if (valA == valB || valA + valB == 10)
+                    {
+                        var pair = i < j ? (i, j) : (j, i);
+                        _foundPairs.Add(pair);
+                    }
                 }
             }
         }
 
-        Debug.Log("==== ALL MATCHES FOUND ====");
+        // Debug.Log("==== ALL MATCHES FOUND ====");
 
-        foreach (var (a, b) in _foundPairs)
-        {
-            var valA = _boardValues[a];
-            var valB = _boardValues[b];
-            var type = valA == valB ? "Same" : "Sum10";
+        // foreach (var (a, b) in _foundPairs)
+        // {
+        //     var valA = _boardValues[a];
+        //     var valB = _boardValues[b];
+        //     var type = valA == valB ? "Same" : "Sum10";
 
-            Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
-        }
+        //     Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
+        // }
     }
 
-    private void CheckAndAddPair(int i, int row, int col, int valA, HashSet<(int, int)> foundPairs)
+    private void CheckAndAddPair(int i, int row, int col, int valA)
     {
-        if (row < 0 || row >= GenRows || col < 0 || col >= GenCols) return;
+        if (row < 0 || col < 0 || col >= GenCols) return;
 
         var j = row * GenCols + col;
-        var valB = _boardValues[j];
+        if (j >= _boardValues.Length) return;
 
+        var valB = _boardValues[j];
         if (valA == valB || valA + valB == 10)
         {
             var pair = i < j ? (i, j) : (j, i);
-            foundPairs.Add(pair);
+            _foundPairs.Add(pair);
         }
     }
     #endregion
@@ -331,6 +337,10 @@ public class CellGenerator : Singleton<CellGenerator>
     {
         var originalCells = Board.Instance.GetCells();
         var cellsCopy = originalCells.ToList();
+        var startIndex = originalCells.Count;
+
+        UpdateBoardValues(cellsCopy.Where(c => c.IsActive).ToList());
+        FindAllMatches();
 
         var spawnedGems = 0;
         var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
@@ -345,6 +355,7 @@ public class CellGenerator : Singleton<CellGenerator>
         {
             var originalCell = cellsCopy[i];
             if (!originalCell.IsActive) continue;
+            var currentIndex = startIndex + i;
 
             var value = originalCell.Value;
             var shouldSpawnGem = false;
@@ -354,7 +365,7 @@ public class CellGenerator : Singleton<CellGenerator>
             {
                 var chance = Random.Range(5f, 8f); // X%
 
-                if ((forceSpawnGem || Random.Range(0f, 100f) < chance))
+                if ((forceSpawnGem || Random.Range(0f, 100f) < chance) && IsSafeToSpawnGem(currentIndex, spawnedGemIndexes))
                 {
                     var validGemTypes = GemManager.Instance.AvailableGemTypes;
                     gemTypeToSpawn = validGemTypes[Random.Range(0, validGemTypes.Count)];
@@ -369,17 +380,37 @@ public class CellGenerator : Singleton<CellGenerator>
             {
                 spawnedGems++;
                 spawnGemCounter = 0;
-                spawnedGemIndexes.Add(i);
+                spawnedGemIndexes.Add(currentIndex);
             }
             else
             {
                 spawnGemCounter++;
             }
 
-            forceSpawnGem = spawnGemCounter >= gemInterval;
+            forceSpawnGem = spawnGemCounter >= gemInterval || !AnySafeIndexRemaining(currentIndex + 1, spawnedGemIndexes);
         }
 
         Board.Instance.UpdateContainerHeight();
+    }
+    #endregion
+
+    #region Spawn Conditions
+    private bool IsSafeToSpawnGem(int index, List<int> spawnedGemIndexes)
+    {
+        foreach (var gemIndex in spawnedGemIndexes)
+            if (_foundPairs.Contains((gemIndex, index)) || _foundPairs.Contains((index, gemIndex)))
+                return false;
+
+        return true;
+    }
+
+    private bool AnySafeIndexRemaining(int startIndex, List<int> spawnedGemIndexes)
+    {
+        for (int i = startIndex; i < _boardValues.Length; i++)
+            if (IsSafeToSpawnGem(i, spawnedGemIndexes))
+                return true;
+
+        return false;
     }
     #endregion
 }

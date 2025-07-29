@@ -171,6 +171,8 @@ public class Board : Singleton<Board>
 
             CheckClearBoard();
             UpdateContainerHeight();
+
+            CellGenerator.Instance.UpdateBoardValues();
             CellGenerator.Instance.SetGridLayout(true);
         });
     }
