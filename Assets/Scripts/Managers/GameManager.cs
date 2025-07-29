@@ -10,7 +10,7 @@ public class GameManager : SingletonPersistent<GameManager>
 
         SceneManager.LoadSceneAsync("Gameplay").completed += op =>
         {
-            StageManager.Instance.UpdateNewStage(1);
+            CellGenerator.Instance.UpdateNewStage(1);
             GameplayUI.Instance.SetupGems();
         };
     }

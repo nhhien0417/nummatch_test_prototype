@@ -123,7 +123,7 @@ public class Board : Singleton<Board>
 
         if (clearedRows.Count == 0) return;
 
-        StageManager.Instance.SetGridLayout(false);
+        CellGenerator.Instance.SetGridLayout(false);
         AudioManager.Instance.PlaySFX("clear_row");
 
         var seq = DOTween.Sequence();
@@ -171,7 +171,7 @@ public class Board : Singleton<Board>
 
             CheckClearBoard();
             UpdateContainerHeight();
-            StageManager.Instance.SetGridLayout(true);
+            CellGenerator.Instance.SetGridLayout(true);
         });
     }
 
@@ -179,7 +179,7 @@ public class Board : Singleton<Board>
     {
         if (_cells.Count > 0) return;
 
-        StageManager.Instance.UpdateNewStage(StageManager.Instance.CurrentStage + 1);
+        CellGenerator.Instance.UpdateNewStage(CellGenerator.Instance.CurrentStage + 1);
     }
     #endregion
 

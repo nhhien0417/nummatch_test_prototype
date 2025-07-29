@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class StageManager : Singleton<StageManager>
+public class CellGenerator : Singleton<CellGenerator>
 {
     [SerializeField] private GameObject _cellPrefab;
     [SerializeField] private Transform _container;
@@ -343,12 +343,51 @@ public class StageManager : Singleton<StageManager>
         var originalCells = Board.Instance.GetCells();
         var cellsCopy = originalCells.ToList();
 
-        foreach (var cell in cellsCopy)
-        {
-            if (!cell.IsActive) continue;
+        var spawnedGems = 0;
+        var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
 
-            var clone = SpawnCell(cell.Value, GemType.None);
+        var spawnGemCounter = 0;
+        var gemInterval = Mathf.CeilToInt((cellsCopy.Count + 1) / 2); // Y
+
+        var forceSpawnGem = false;
+        var spawnedGemIndexes = new List<int>();
+
+        for (int i = 0; i < cellsCopy.Count; i++)
+        {
+            var originalCell = cellsCopy[i];
+            if (!originalCell.IsActive) continue;
+
+            var value = originalCell.Value;
+            var shouldSpawnGem = false;
+            var gemTypeToSpawn = GemType.None;
+
+            if (spawnedGems < maxGems)
+            {
+                var chance = Random.Range(5f, 8f); // X%
+
+                if ((forceSpawnGem || Random.Range(0f, 100f) < chance))
+                {
+                    var validGemTypes = GemManager.Instance.AvailableGemTypes;
+                    gemTypeToSpawn = validGemTypes[Random.Range(0, validGemTypes.Count)];
+                    shouldSpawnGem = true;
+                }
+            }
+
+            var clone = SpawnCell(value, gemTypeToSpawn);
             originalCells.Add(clone);
+
+            if (shouldSpawnGem)
+            {
+                spawnedGems++;
+                spawnGemCounter = 0;
+                spawnedGemIndexes.Add(i);
+            }
+            else
+            {
+                spawnGemCounter++;
+            }
+
+            forceSpawnGem = spawnGemCounter >= gemInterval;
         }
 
         Board.Instance.UpdateContainerHeight();
