@@ -23,11 +23,16 @@ public class Cell : MonoBehaviour
 
     public void SetState(bool isActive, int value, GemType gemType)
     {
+        if (!isActive && _gemType != GemType.None)
+        {
+            GemManager.Instance.UpdateGemProgress(_gemType);
+        }
+
         _value = value;
         _isActive = isActive;
         _gemType = gemType;
 
-        _text.text = value > 0 ? value.ToString() : "";
+        _text.text = value.ToString();
         _text.color = Utils.GetHexColor(isActive ? (gemType == GemType.None ? "#1E5564" : "#EEEEEE") : "#D1D9D4");
 
         _gem.SetActive(gemType != GemType.None);

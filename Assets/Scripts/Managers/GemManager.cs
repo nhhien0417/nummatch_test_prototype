@@ -24,7 +24,7 @@ public class GemManager : SingletonPersistent<GemManager>
     public List<GemType> AvailableGemTypes => _gemProgresses.Where(g => g.Collected < g.RequiredAmount)
                                                             .Select(g => g.Type).ToList();
 
-    public void GenerateGemProgress()
+    public void GenerateGemProgresses()
     {
         _gemProgresses.Clear();
 
@@ -35,6 +35,14 @@ public class GemManager : SingletonPersistent<GemManager>
         {
             _gemProgresses.Add(new GemProgress(type, Random.Range(1, 4)));
         }
+    }
+
+    public void UpdateGemProgress(GemType gemType)
+    {
+        var gemProgress = _gemProgresses.FirstOrDefault(g => g.Type == gemType);
+        gemProgress.CollectGem();
+        
+        GameplayUI.Instance.UpdateGemProgresses(gemProgress);
     }
 }
 
@@ -57,12 +65,21 @@ public class GemProgress
 {
     public GemType Type { get; }
     public int RequiredAmount { get; }
-    public int Collected { get; set; }
+    public int Collected { get; private set; }
+    public bool IsCompleted => Collected >= RequiredAmount;
 
     public GemProgress(GemType type, int requiredAmount)
     {
         Type = type;
         RequiredAmount = requiredAmount;
         Collected = 0;
+    }
+
+    public void CollectGem()
+    {
+        if (Collected < RequiredAmount)
+        {
+            Collected++;
+        }
     }
 }

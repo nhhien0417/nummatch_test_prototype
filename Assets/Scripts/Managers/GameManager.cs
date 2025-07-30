@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.SceneManagement;
 
 public class GameManager : SingletonPersistent<GameManager>
@@ -9,7 +7,7 @@ public class GameManager : SingletonPersistent<GameManager>
 
     public void NewGame()
     {
-        GemManager.Instance.GenerateGemProgress();
+        GemManager.Instance.GenerateGemProgresses();
 
         SceneManager.LoadSceneAsync("Gameplay").completed += op =>
         {
