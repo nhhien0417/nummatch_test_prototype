@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class GameplayUI : Singleton<GameplayUI>
 {
-    [SerializeField] private TextMeshProUGUI _stageText;
+    [SerializeField] private TextMeshProUGUI _stageText, _addText;
     [SerializeField] private Transform _gemContainer;
     [SerializeField] private GameObject _gemPrefab;
 
@@ -20,6 +20,11 @@ public class GameplayUI : Singleton<GameplayUI>
     public void UpdateStageText()
     {
         _stageText.text = $"Stage: {GameManager.Instance.CurrentStage}";
+    }
+
+    public void UpdateAddText()
+    {
+        _addText.text = GameManager.Instance.AddCount.ToString();
     }
 
     public void SetupGems()

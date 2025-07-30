@@ -335,6 +335,9 @@ public class CellGenerator : Singleton<CellGenerator>
     #region Clone Cells
     public void CloneCells()
     {
+        if (GameManager.Instance.AddCount <= 0) return;
+        GameManager.Instance.UpdateAddCount();
+
         var originalCells = Board.Instance.GetCells();
         var cellsCopy = originalCells.ToList();
         var startIndex = originalCells.Count;
