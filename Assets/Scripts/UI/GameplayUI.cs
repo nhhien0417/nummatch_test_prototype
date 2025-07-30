@@ -29,6 +29,11 @@ public class GameplayUI : Singleton<GameplayUI>
 
     public void SetupGems()
     {
+        foreach (var gem in _gems)
+        {
+            Destroy(gem.gameObject);
+        }
+
         _gems.Clear();
 
         foreach (var gemProgress in GemManager.Instance.GemProgresses)

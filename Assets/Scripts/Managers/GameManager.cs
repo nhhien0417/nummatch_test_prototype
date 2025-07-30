@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine.SceneManagement;
 
 public class GameManager : SingletonPersistent<GameManager>
@@ -9,14 +10,11 @@ public class GameManager : SingletonPersistent<GameManager>
     public void NewGame()
     {
         GemManager.Instance.GenerateGemProgresses();
-
-        SceneManager.LoadSceneAsync("Gameplay").completed += op =>
-        {
-            UpdateNewStage(1);
-            GameplayUI.Instance.SetupGems();
-        };
+        GameplayUI.Instance.SetupGems();
+        UpdateNewStage(1);
     }
 
+    #region Update State
     public void UpdateNewStage(int stage)
     {
         _currentStage = stage;
@@ -24,6 +22,7 @@ public class GameManager : SingletonPersistent<GameManager>
 
         CellGenerator.Instance.GenerateBoard();
         GameplayUI.Instance.UpdateStageText();
+        GameplayUI.Instance.UpdateAddText();
     }
 
     public void UpdateAddCount()
@@ -31,4 +30,15 @@ public class GameManager : SingletonPersistent<GameManager>
         _addCount--;
         GameplayUI.Instance.UpdateAddText();
     }
+    #endregion
+
+    #region Handle Game Over
+    public void CheckWinGame()
+    {
+        var canWin = GemManager.Instance.GemProgresses.All(g => g.Collected == g.RequiredAmount);
+        if (!canWin) return;
+
+        PopupController.Instance.ShowPopup(PopupController.Popup.WinPopup);
+    }
+    #endregion
 }

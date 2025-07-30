@@ -41,8 +41,9 @@ public class GemManager : SingletonPersistent<GemManager>
     {
         var gemProgress = _gemProgresses.FirstOrDefault(g => g.Type == gemType);
         gemProgress.CollectGem();
-        
+
         GameplayUI.Instance.UpdateGemProgresses(gemProgress);
+        GameManager.Instance.CheckWinGame();
     }
 }
 
@@ -66,7 +67,6 @@ public class GemProgress
     public GemType Type { get; }
     public int RequiredAmount { get; }
     public int Collected { get; private set; }
-    public bool IsCompleted => Collected >= RequiredAmount;
 
     public GemProgress(GemType type, int requiredAmount)
     {
