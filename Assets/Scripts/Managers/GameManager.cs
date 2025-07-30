@@ -35,8 +35,8 @@ public class GameManager : SingletonPersistent<GameManager>
     #region Handle Game Over
     public void CheckWinGame()
     {
-        var canWin = GemManager.Instance.GemProgresses.All(g => g.Collected == g.RequiredAmount);
-        if (!canWin) return;
+        var isWin = GemManager.Instance.GemProgresses.All(g => g.Collected == g.RequiredAmount);
+        if (!isWin) return;
 
         PopupController.Instance.ShowPopup(PopupController.Popup.WinPopup);
     }
