@@ -216,6 +216,7 @@ public class Board : Singleton<Board>
             targetCell.SetState(false, targetCell.Value, GemType.None);
 
             CheckClearRow();
+            CellGenerator.Instance.UpdateBoardValues();
             AudioManager.Instance.PlaySFX("match_cell");
         }
         else

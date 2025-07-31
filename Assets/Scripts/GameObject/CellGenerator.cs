@@ -3,6 +3,18 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
+public struct CellData
+{
+    public int Value;
+    public bool IsActive;
+
+    public CellData(int value, bool isActive)
+    {
+        Value = value;
+        IsActive = isActive;
+    }
+}
+
 public class CellGenerator : Singleton<CellGenerator>
 {
     [SerializeField] private GameObject _cellPrefab;
@@ -14,9 +26,9 @@ public class CellGenerator : Singleton<CellGenerator>
 
     private List<(int, int)> _matchPairs = new();
     private HashSet<(int, int)> _foundPairs = new();
+    private CellData[] _boardValues = new CellData[GenCells];
 
-    private int[] _boardValues = new int[GenCells];
-    private int _totalRows => Mathf.CeilToInt((float)_boardValues.Length / GenCols);
+    public int TotalRows => Mathf.CeilToInt((float)_boardValues.Length / GenCols);
 
     #region Update State
     private Cell SpawnCell(int value, GemType gemType)
@@ -35,22 +47,27 @@ public class CellGenerator : Singleton<CellGenerator>
 
     public void UpdateBoardValues(List<Cell> newCells = null)
     {
-        _boardValues = Board.Instance.GetCells()
-            .Concat(newCells ?? Enumerable.Empty<Cell>())
-            .Select(c => c.Value)
-            .ToArray();
+        var allCells = Board.Instance.GetCells().Concat(newCells ?? Enumerable.Empty<Cell>()).ToList();
 
-        // var sb = new System.Text.StringBuilder();
-        // for (int i = 0; i < _boardValues.Length; i++)
-        // {
-        //     sb.Append(_boardValues[i]);
-        //     sb.Append(' ');
+        _boardValues = new CellData[allCells.Count];
 
-        //     if ((i + 1) % 9 == 0)
-        //         sb.AppendLine();
-        // }
+        for (int i = 0; i < allCells.Count; i++)
+        {
+            var cell = allCells[i];
+            _boardValues[i] = new CellData(cell.Value, cell.IsActive);
+        }
 
-        // Debug.Log(sb.ToString());
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < _boardValues.Length; i++)
+        {
+            var cell = _boardValues[i];
+            sb.Append(cell.IsActive ? cell.Value.ToString() : "X");
+            sb.Append(' ');
+
+            if ((i + 1) % 9 == 0)
+                sb.AppendLine();
+        }
+        Debug.Log(sb.ToString());
     }
     #endregion
 
@@ -100,7 +117,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
         for (var i = 0; i < GenCells; i++)
         {
-            var value = _boardValues[i];
+            var value = _boardValues[i].Value;
             var shouldSpawnGem = false;
             var gemTypeToSpawn = GemType.None;
 
@@ -137,7 +154,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
     private bool TryGenerateBoard(int pairsCount)
     {
-        _boardValues = new int[GenCells];
+        _boardValues = new CellData[GenCells];
         _matchPairs = PickMatchPairs(pairsCount);
 
         var valuePool = new List<int>();
@@ -154,9 +171,9 @@ public class CellGenerator : Singleton<CellGenerator>
             {
                 var otherIndex = pair.Item1 == index ? pair.Item2 : pair.Item1;
 
-                if (_boardValues[otherIndex] != 0)
+                if (_boardValues[otherIndex].Value != 0)
                 {
-                    var otherVal = _boardValues[otherIndex];
+                    var otherVal = _boardValues[otherIndex].Value;
                     value = PickMatchingValue(otherVal, valuePool);
                     if (value == -1) return false;
                 }
@@ -171,7 +188,7 @@ public class CellGenerator : Singleton<CellGenerator>
                 if (value == -1) return false;
             }
 
-            _boardValues[index] = value;
+            _boardValues[index] = new CellData(value, true);
             valuePool.Remove(value);
         }
 
@@ -236,7 +253,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
         foreach (var neighbor in GetNeighborIndices(index))
         {
-            var other = _boardValues[neighbor];
+            var other = _boardValues[neighbor].Value;
             candidates = candidates.Where(v => v != other && v + other != 10).ToList();
             if (candidates.Count == 0) return -1;
         }
@@ -266,8 +283,8 @@ public class CellGenerator : Singleton<CellGenerator>
 
         foreach (var (a, b) in _matchPairs)
         {
-            var valA = _boardValues[a];
-            var valB = _boardValues[b];
+            var valA = _boardValues[a].Value;
+            var valB = _boardValues[b].Value;
             var type = valA == valB ? "Same" : (valA + valB == 10 ? "Sum10" : "Invalid");
 
             Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
