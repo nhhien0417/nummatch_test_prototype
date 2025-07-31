@@ -99,7 +99,7 @@ public class Board : Singleton<Board>
         return true;
     }
 
-    private void CheckClearRow()
+    private bool CheckClearRow()
     {
         var clearedRows = new List<int>();
 
@@ -121,7 +121,7 @@ public class Board : Singleton<Board>
             if (isEmpty) clearedRows.Add(row);
         }
 
-        if (clearedRows.Count == 0) return;
+        if (clearedRows.Count == 0) return false;
 
         CellGenerator.Instance.SetGridLayout(false);
         AudioManager.Instance.PlaySFX("clear_row");
@@ -173,8 +173,11 @@ public class Board : Singleton<Board>
             UpdateContainerHeight();
 
             CellGenerator.Instance.UpdateBoardValues();
+            GameManager.Instance.CheckLoseGame();
             CellGenerator.Instance.SetGridLayout(true);
         });
+
+        return true;
     }
 
     private void CheckClearBoard()
@@ -215,9 +218,12 @@ public class Board : Singleton<Board>
             selectedCell.SetState(false, selectedCell.Value, GemType.None);
             targetCell.SetState(false, targetCell.Value, GemType.None);
 
-            CheckClearRow();
-            CellGenerator.Instance.UpdateBoardValues();
-            AudioManager.Instance.PlaySFX("match_cell");
+            if (!CheckClearRow())
+            {
+                AudioManager.Instance.PlaySFX("match_cell");
+                CellGenerator.Instance.UpdateBoardValues();
+                GameManager.Instance.CheckLoseGame();
+            }
         }
         else
         {

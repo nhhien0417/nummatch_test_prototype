@@ -40,5 +40,13 @@ public class GameManager : SingletonPersistent<GameManager>
 
         PopupController.Instance.ShowPopup(PopupController.Popup.WinPopup);
     }
+
+    public void CheckLoseGame()
+    {
+        var isLose = !CellGenerator.Instance.AnyPair() && _addCount <= 0;
+        if (!isLose) return;
+
+        PopupController.Instance.ShowPopup(PopupController.Popup.LosePopup);
+    }
     #endregion
 }

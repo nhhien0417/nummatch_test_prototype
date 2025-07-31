@@ -371,6 +371,12 @@ public class CellGenerator : Singleton<CellGenerator>
             c += dCol;
         }
     }
+
+    public bool AnyPair()
+    {
+        FindAllMatchPairs();
+        return _foundPairs.Count() > 0;
+    }
     #endregion
 
     #region Clone Cells
@@ -435,6 +441,7 @@ public class CellGenerator : Singleton<CellGenerator>
         }
 
         Board.Instance.UpdateContainerHeight();
+        GameManager.Instance.CheckLoseGame();
     }
     #endregion
 
