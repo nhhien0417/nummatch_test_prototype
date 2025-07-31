@@ -26,9 +26,9 @@ public class CellGenerator : Singleton<CellGenerator>
 
     private List<(int, int)> _matchPairs = new();
     private HashSet<(int, int)> _foundPairs = new();
-    private CellData[] _boardValues = new CellData[GenCells];
+    private CellData[] _boardData = new CellData[GenCells];
 
-    public int TotalRows => Mathf.CeilToInt((float)_boardValues.Length / GenCols);
+    public int TotalRows => Mathf.CeilToInt((float)_boardData.Length / GenCols);
 
     #region Update State
     private Cell SpawnCell(int value, GemType gemType)
@@ -49,12 +49,12 @@ public class CellGenerator : Singleton<CellGenerator>
     {
         var allCells = Board.Instance.GetCells().Concat(newCells ?? Enumerable.Empty<Cell>()).ToList();
 
-        _boardValues = new CellData[allCells.Count];
+        _boardData = new CellData[allCells.Count];
 
         for (int i = 0; i < allCells.Count; i++)
         {
             var cell = allCells[i];
-            _boardValues[i] = new CellData(cell.Value, cell.IsActive);
+            _boardData[i] = new CellData(cell.Value, cell.IsActive);
         }
 
         // var sb = new System.Text.StringBuilder();
@@ -117,7 +117,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
         for (var i = 0; i < GenCells; i++)
         {
-            var value = _boardValues[i].Value;
+            var value = _boardData[i].Value;
             var shouldSpawnGem = false;
             var gemTypeToSpawn = GemType.None;
 
@@ -154,7 +154,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
     private bool TryGenerateBoard(int pairsCount)
     {
-        _boardValues = new CellData[GenCells];
+        _boardData = new CellData[GenCells];
         _matchPairs = PickMatchPairs(pairsCount);
 
         var valuePool = new List<int>();
@@ -171,9 +171,9 @@ public class CellGenerator : Singleton<CellGenerator>
             {
                 var otherIndex = pair.Item1 == index ? pair.Item2 : pair.Item1;
 
-                if (_boardValues[otherIndex].Value != 0)
+                if (_boardData[otherIndex].Value != 0)
                 {
-                    var otherVal = _boardValues[otherIndex].Value;
+                    var otherVal = _boardData[otherIndex].Value;
                     value = PickMatchingValue(otherVal, valuePool);
                     if (value == -1) return false;
                 }
@@ -188,7 +188,7 @@ public class CellGenerator : Singleton<CellGenerator>
                 if (value == -1) return false;
             }
 
-            _boardValues[index] = new CellData(value, true);
+            _boardData[index] = new CellData(value, true);
             valuePool.Remove(value);
         }
 
@@ -253,7 +253,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
         foreach (var neighbor in GetNeighborIndices(index))
         {
-            var other = _boardValues[neighbor].Value;
+            var other = _boardData[neighbor].Value;
             candidates = candidates.Where(v => v != other && v + other != 10).ToList();
             if (candidates.Count == 0) return -1;
         }
@@ -283,8 +283,8 @@ public class CellGenerator : Singleton<CellGenerator>
 
         foreach (var (a, b) in _matchPairs)
         {
-            var valA = _boardValues[a].Value;
-            var valB = _boardValues[b].Value;
+            var valA = _boardData[a].Value;
+            var valB = _boardData[b].Value;
             var type = valA == valB ? "Same" : (valA + valB == 10 ? "Sum10" : "Invalid");
 
             Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
@@ -295,12 +295,12 @@ public class CellGenerator : Singleton<CellGenerator>
     {
         _foundPairs.Clear();
 
-        var total = _boardValues.Length;
+        var total = _boardData.Length;
         for (var i = 0; i < total; i++)
         {
-            if (!_boardValues[i].IsActive) continue;
+            if (!_boardData[i].IsActive) continue;
 
-            var valA = _boardValues[i].Value;
+            var valA = _boardData[i].Value;
             var row = i / GenCols;
             var col = i % GenCols;
 
@@ -316,12 +316,12 @@ public class CellGenerator : Singleton<CellGenerator>
             // ➕ Linear: Nearest active in index order without blocking
             for (var j = i + 1; j < total; j++)
             {
-                if (!_boardValues[j].IsActive) continue;
+                if (!_boardData[j].IsActive) continue;
 
                 var blocked = false;
                 for (var k = i + 1; k < j; k++)
                 {
-                    if (_boardValues[k].IsActive)
+                    if (_boardData[k].IsActive)
                     {
                         blocked = true;
                         break;
@@ -330,7 +330,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
                 if (blocked) break;
 
-                var valB = _boardValues[j].Value;
+                var valB = _boardData[j].Value;
                 if (valA == valB || valA + valB == 10)
                     _foundPairs.Add((i, j));
 
@@ -341,8 +341,8 @@ public class CellGenerator : Singleton<CellGenerator>
         Debug.Log("==== ALL MATCHES FOUND ====");
         foreach (var (a, b) in _foundPairs)
         {
-            var valA = _boardValues[a].Value;
-            var valB = _boardValues[b].Value;
+            var valA = _boardData[a].Value;
+            var valB = _boardData[b].Value;
             var type = valA == valB ? "Same" : "Sum10";
             Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
         }
@@ -356,11 +356,11 @@ public class CellGenerator : Singleton<CellGenerator>
         while (r >= 0 && r < TotalRows && c >= 0 && c < GenCols)
         {
             var targetIndex = r * GenCols + c;
-            if (targetIndex >= _boardValues.Length) break;
+            if (targetIndex >= _boardData.Length) break;
 
-            if (_boardValues[targetIndex].IsActive)
+            if (_boardData[targetIndex].IsActive)
             {
-                var valB = _boardValues[targetIndex].Value;
+                var valB = _boardData[targetIndex].Value;
                 if (valA == valB || valA + valB == 10)
                     _foundPairs.Add((startIndex, targetIndex));
 
@@ -457,7 +457,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
     private bool AnySafeIndexRemaining(int startIndex, List<int> spawnedGemIndexes)
     {
-        for (int i = startIndex; i < _boardValues.Length; i++)
+        for (int i = startIndex; i < _boardData.Length; i++)
             if (IsSafeToSpawnGem(i, spawnedGemIndexes))
                 return true;
 

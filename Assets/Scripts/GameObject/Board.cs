@@ -10,7 +10,7 @@ public class Board : Singleton<Board>
     [SerializeField] private RectTransform _boardContainer;
 
     private List<Cell> _cells = new();
-    private int _selectedCellIndex = -1;
+    private int _selectedIndex = -1;
     private const int BoardCols = 9;
 
     public int TotalRows => Mathf.CeilToInt((float)_cells.Count / BoardCols);
@@ -193,27 +193,27 @@ public class Board : Singleton<Board>
     {
         var index = _cells.IndexOf(cell);
 
-        if (_selectedCellIndex == -1)
+        if (_selectedIndex == -1)
         {
-            _selectedCellIndex = index;
+            _selectedIndex = index;
             _cells[index].Select();
             return;
         }
 
         var targetCell = _cells[index];
-        var selectedCell = _cells[_selectedCellIndex];
+        var selectedCell = _cells[_selectedIndex];
 
         selectedCell.Deselect();
 
-        if (_selectedCellIndex == index)
+        if (_selectedIndex == index)
         {
-            _selectedCellIndex = -1;
+            _selectedIndex = -1;
             return;
         }
 
         if (CanMatch(selectedCell, targetCell))
         {
-            _selectedCellIndex = -1;
+            _selectedIndex = -1;
 
             selectedCell.SetState(false, selectedCell.Value, GemType.None);
             targetCell.SetState(false, targetCell.Value, GemType.None);
@@ -229,12 +229,12 @@ public class Board : Singleton<Board>
         {
             if (selectedCell.Value != targetCell.Value && selectedCell.Value + targetCell.Value != 10)
             {
-                _selectedCellIndex = index;
+                _selectedIndex = index;
                 targetCell.Select();
             }
             else
             {
-                _selectedCellIndex = -1;
+                _selectedIndex = -1;
             }
         }
     }
