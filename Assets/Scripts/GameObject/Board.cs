@@ -10,7 +10,7 @@ public class Board : Singleton<Board>
     [SerializeField] private RectTransform _boardContainer;
 
     private List<Cell> _cells = new();
-    private int _selectedIndex = -1;
+    private Cell _selectedCell;
     private const int BoardCols = 9;
 
     public int TotalRows => Mathf.CeilToInt((float)_cells.Count / BoardCols);
@@ -189,33 +189,26 @@ public class Board : Singleton<Board>
     #endregion
 
     #region Cell Interaction
-    public void OnCellSelected(Cell cell)
+    public void OnCellSelected(Cell targetCell)
     {
-        var index = _cells.IndexOf(cell);
-
-        if (_selectedIndex == -1)
+        if (_selectedCell == null)
         {
-            _selectedIndex = index;
-            _cells[index].Select();
+            _selectedCell = targetCell;
+            _selectedCell.Select();
             return;
         }
 
-        var targetCell = _cells[index];
-        var selectedCell = _cells[_selectedIndex];
-
-        selectedCell.Deselect();
-
-        if (_selectedIndex == index)
+        if (_selectedCell == targetCell)
         {
-            _selectedIndex = -1;
+            _selectedCell.Deselect();
+            _selectedCell = null;
             return;
         }
 
-        if (CanMatch(selectedCell, targetCell))
+        if (CanMatch(_selectedCell, targetCell))
         {
-            _selectedIndex = -1;
-
-            selectedCell.SetState(false, selectedCell.Value, GemType.None);
+            _selectedCell.Deselect();
+            _selectedCell.SetState(false, _selectedCell.Value, GemType.None);
             targetCell.SetState(false, targetCell.Value, GemType.None);
 
             if (!CheckClearRow())
@@ -224,18 +217,21 @@ public class Board : Singleton<Board>
                 CellGenerator.Instance.UpdateBoardValues();
                 GameManager.Instance.CheckLoseGame();
             }
+
+            _selectedCell = null;
+            return;
+        }
+
+        if (_selectedCell.Value != targetCell.Value && _selectedCell.Value + targetCell.Value != 10)
+        {
+            _selectedCell.Deselect();
+            _selectedCell = targetCell;
+            _selectedCell.Select();
         }
         else
         {
-            if (selectedCell.Value != targetCell.Value && selectedCell.Value + targetCell.Value != 10)
-            {
-                _selectedIndex = index;
-                targetCell.Select();
-            }
-            else
-            {
-                _selectedIndex = -1;
-            }
+            _selectedCell.Deselect();
+            _selectedCell = null;
         }
     }
     #endregion
