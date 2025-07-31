@@ -57,17 +57,17 @@ public class CellGenerator : Singleton<CellGenerator>
             _boardValues[i] = new CellData(cell.Value, cell.IsActive);
         }
 
-        var sb = new System.Text.StringBuilder();
-        for (int i = 0; i < _boardValues.Length; i++)
-        {
-            var cell = _boardValues[i];
-            sb.Append(cell.IsActive ? cell.Value.ToString() : "X");
-            sb.Append(' ');
+        // var sb = new System.Text.StringBuilder();
+        // for (int i = 0; i < _boardValues.Length; i++)
+        // {
+        //     var cell = _boardValues[i];
+        //     sb.Append(cell.IsActive ? cell.Value.ToString() : "X");
+        //     sb.Append(' ');
 
-            if ((i + 1) % 9 == 0)
-                sb.AppendLine();
-        }
-        Debug.Log(sb.ToString());
+        //     if ((i + 1) % 9 == 0)
+        //         sb.AppendLine();
+        // }
+        // Debug.Log(sb.ToString());
     }
     #endregion
 
