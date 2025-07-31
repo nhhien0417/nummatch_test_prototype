@@ -255,9 +255,8 @@ public class Board : Singleton<Board>
 
         DOTween.Kill(scrollRect, complete: false);
         DOTween.To(() => scrollRect.verticalNormalizedPosition, value => scrollRect.verticalNormalizedPosition = value,
-                         targetScroll, 1f).SetEase(Ease.OutCubic).SetTarget(scrollRect);
+                         targetScroll, targetScroll == 1 ? 0f : 1f).SetEase(Ease.OutCubic).SetTarget(scrollRect);
     }
-
 
     public void HandleScrollPosition(Vector2 normalizedPosition)
     {

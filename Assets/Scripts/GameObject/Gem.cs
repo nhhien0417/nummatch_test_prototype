@@ -10,13 +10,14 @@ public class Gem : MonoBehaviour
     private GemType _gemType;
     public GemType GemType => _gemType;
 
-    public void UpdateGemInfo(int amount, GemType gemType, Sprite sprite = null)
+    public void UpdateGemInfo(int amount, GemType gemType, Sprite sprite = null, bool hasText = true)
     {
         if (sprite != null)
             _image.sprite = sprite;
 
         _gemType = gemType;
         _amount.text = amount.ToString();
+        _amount.gameObject.SetActive(hasText);
     }
 
     public void UpdateProgress(int amount)

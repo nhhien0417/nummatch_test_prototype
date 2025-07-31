@@ -1,15 +1,15 @@
 using System;
-using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class PopupController : Singleton<PopupController>
 {
-    [SerializeField] private GameObject _background, _winPopup, _losePopup;
+    [SerializeField] private GameObject _gemPrefab, _background;
+    [SerializeField] private GameObject _winPopup, _losePopup;
+    [SerializeField] private Transform _winContainer, _loseContainer;
 
     private Popup _lastPopup;
-    private Dictionary<Popup, GameObject> _popupMap;
 
     public enum Popup
     {
@@ -17,27 +17,50 @@ public class PopupController : Singleton<PopupController>
         LosePopup
     }
 
-    private void Awake()
-    {
-        _popupMap = new Dictionary<Popup, GameObject>
-        {
-            { Popup.WinPopup, _winPopup },
-            { Popup.LosePopup, _losePopup }
-        };
-    }
+    public void BackToHome() => HidePopup(() => GameplayUI.Instance.BackToHome());
+    public void NewGame() => HidePopup(() => GameManager.Instance.NewGame());
 
     public void ShowPopup(Popup popup)
     {
-        _lastPopup = popup;
+        var (popupObject, container) = GetPopupComponents(popup);
+        if (popupObject.activeSelf) return;
 
-        if (!_popupMap.TryGetValue(popup, out var popupObject) || popupObject.activeSelf)
+        _lastPopup = popup;
+        var isLose = popup == Popup.LosePopup;
+
+        InstantiateGemList(container, isLose);
+        AnimatePopupIn(popupObject);
+    }
+
+    public void HidePopup(Action onComplete = null)
+    {
+        var (popupObject, _) = GetPopupComponents(_lastPopup);
+        if (!popupObject.activeSelf)
         {
+            onComplete?.Invoke();
             return;
         }
 
-        _background.SetActive(true);
+        AnimatePopupOut(popupObject, onComplete);
+    }
+
+    private void InstantiateGemList(Transform container, bool isLose)
+    {
+        foreach (Transform child in container)
+            Destroy(child.gameObject);
+
+        foreach (var gemProgress in GemManager.Instance.GemProgresses)
+        {
+            var gemObject = Instantiate(_gemPrefab, container).GetComponent<Gem>();
+            gemObject.UpdateGemInfo(gemProgress.RequiredAmount, gemProgress.Type, GemManager.Instance.GetGemEntries()[gemProgress.Type], isLose);
+        }
+    }
+
+    private void AnimatePopupIn(GameObject popupObject)
+    {
         var bgImage = _background.GetComponent<Image>();
         bgImage.color = new Color(0, 0, 0, 0);
+        _background.SetActive(true);
 
         popupObject.transform.localScale = Vector3.zero;
         popupObject.SetActive(true);
@@ -47,14 +70,8 @@ public class PopupController : Singleton<PopupController>
         .Join(bgImage.DOFade(0.9f, 0.3f).SetEase(Ease.OutSine));
     }
 
-    public void HidePopup(Action onComplete = null)
+    private void AnimatePopupOut(GameObject popupObject, Action onComplete)
     {
-        if (!_popupMap.TryGetValue(_lastPopup, out var popupObject) || !popupObject.activeSelf)
-        {
-            onComplete?.Invoke();
-            return;
-        }
-
         var bgImage = _background.GetComponent<Image>();
         bgImage.color = new Color(0, 0, 0, 0.9f);
         popupObject.transform.localScale = Vector3.one;
@@ -70,19 +87,13 @@ public class PopupController : Singleton<PopupController>
         });
     }
 
-    public void BackToHome()
+    private (GameObject popupObject, Transform container) GetPopupComponents(Popup popup)
     {
-        HidePopup(() =>
+        return popup switch
         {
-            GameplayUI.Instance.BackToHome();
-        });
-    }
-
-    public void NewGame()
-    {
-        HidePopup(() =>
-        {
-            GameManager.Instance.NewGame();
-        });
+            Popup.WinPopup => (_winPopup, _winContainer),
+            Popup.LosePopup => (_losePopup, _loseContainer),
+            _ => throw new ArgumentOutOfRangeException(nameof(popup), popup, null)
+        };
     }
 }
