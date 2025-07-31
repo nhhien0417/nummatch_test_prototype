@@ -1,5 +1,4 @@
 using System.Linq;
-using UnityEngine.SceneManagement;
 
 public class GameManager : SingletonPersistent<GameManager>
 {
