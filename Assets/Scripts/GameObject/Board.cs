@@ -20,7 +20,7 @@ public class Board : Singleton<Board>
     }
 
     #region Checker
-    private bool CanMatch(Cell selectedCell, Cell targetCell)
+    public bool CanMatch(Cell selectedCell, Cell targetCell)
     {
         if (selectedCell == null || targetCell == null || selectedCell == targetCell)
             return false;

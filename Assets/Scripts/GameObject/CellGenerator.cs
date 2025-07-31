@@ -68,7 +68,7 @@ public class CellGenerator : Singleton<CellGenerator>
         while (!TryGenerateBoard(matchPairs)) attempt++;
 
         SpawnCells();
-        PrintMatchPairs();
+        PrintInitMatchPairs();
 
         Board.Instance.UpdateContainerHeight();
         Debug.Log($"✅ Generated after {attempt} attempts");
@@ -87,7 +87,7 @@ public class CellGenerator : Singleton<CellGenerator>
     private void SpawnCells()
     {
         Reset();
-        FindAllMatches();
+        FindAllMatchPairs();
 
         var spawnedGems = 0;
         var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
@@ -260,7 +260,7 @@ public class CellGenerator : Singleton<CellGenerator>
     #endregion
 
     #region Find Pairs
-    private void PrintMatchPairs()
+    private void PrintInitMatchPairs()
     {
         Debug.Log("==== MATCH PAIRS ====");
 
@@ -274,60 +274,91 @@ public class CellGenerator : Singleton<CellGenerator>
         }
     }
 
-    private void FindAllMatches()
+    private void FindAllMatchPairs()
     {
         _foundPairs.Clear();
 
-        for (var i = 0; i < _boardValues.Length; i++)
+        var cells = Board.Instance.GetCells();
+        var total = cells.Count;
+
+        for (var i = 0; i < total; i++)
         {
-            var valA = _boardValues[i];
+            if (!cells[i].IsActive) continue;
+
+            var valA = cells[i].Value;
             var row = i / GenCols;
             var col = i % GenCols;
 
-            CheckAndAddPair(i, row, col + 1, valA);
-            CheckAndAddPair(i, row + 1, col, valA);
-            CheckAndAddPair(i, row + 1, col + 1, valA);
-            CheckAndAddPair(i, row + 1, col - 1, valA);
+            // → Right
+            FindMatchInDirection(i, row, col, 0, +1, valA, cells);
 
-            if (col == GenCols - 1 && row < _totalRows - 1)
+            // ↓ Down
+            FindMatchInDirection(i, row, col, +1, 0, valA, cells);
+
+            // ↘ Diagonal Right-Down
+            FindMatchInDirection(i, row, col, +1, +1, valA, cells);
+
+            // ↙ Diagonal Left-Down
+            FindMatchInDirection(i, row, col, +1, -1, valA, cells);
+
+            // ➕ Linear: Nearest active in index order without blocking
+            for (var j = i + 1; j < total; j++)
             {
-                var j = (row + 1) * GenCols;
-                if (j < _boardValues.Length)
+                if (!cells[j].IsActive) continue;
+
+                var blocked = false;
+                for (var k = i + 1; k < j; k++)
                 {
-                    var valB = _boardValues[j];
-                    if (valA == valB || valA + valB == 10)
+                    if (cells[k].IsActive)
                     {
-                        var pair = i < j ? (i, j) : (j, i);
-                        _foundPairs.Add(pair);
+                        blocked = true;
+                        break;
                     }
                 }
+
+                if (blocked) break;
+
+                var valB = cells[j].Value;
+                if (valA == valB || valA + valB == 10)
+                    _foundPairs.Add((i, j));
+
+                break;
             }
         }
 
-        // Debug.Log("==== ALL MATCHES FOUND ====");
-
-        // foreach (var (a, b) in _foundPairs)
-        // {
-        //     var valA = _boardValues[a];
-        //     var valB = _boardValues[b];
-        //     var type = valA == valB ? "Same" : "Sum10";
-
-        //     Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
-        // }
+        Debug.Log("==== ALL MATCHES FOUND ====");
+        foreach (var (a, b) in _foundPairs)
+        {
+            var valA = cells[a].Value;
+            var valB = cells[b].Value;
+            var type = valA == valB ? "Same" : "Sum10";
+            Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
+        }
     }
 
-    private void CheckAndAddPair(int i, int row, int col, int valA)
+    private void FindMatchInDirection(int startIndex, int row, int col, int dRow, int dCol, int valA, List<Cell> cells)
     {
-        if (row < 0 || col < 0 || col >= GenCols) return;
+        var r = row + dRow;
+        var c = col + dCol;
+        var totalCols = GenCols;
+        var totalRows = _totalRows;
 
-        var j = row * GenCols + col;
-        if (j >= _boardValues.Length) return;
-
-        var valB = _boardValues[j];
-        if (valA == valB || valA + valB == 10)
+        while (r >= 0 && r < totalRows && c >= 0 && c < totalCols)
         {
-            var pair = i < j ? (i, j) : (j, i);
-            _foundPairs.Add(pair);
+            var targetIndex = r * totalCols + c;
+            if (targetIndex >= cells.Count) break;
+
+            if (cells[targetIndex].IsActive)
+            {
+                var valB = cells[targetIndex].Value;
+                if (valA == valB || valA + valB == 10)
+                    _foundPairs.Add((startIndex, targetIndex));
+
+                break; // chỉ xét ô active đầu tiên theo hướng
+            }
+
+            r += dRow;
+            c += dCol;
         }
     }
     #endregion
@@ -343,7 +374,7 @@ public class CellGenerator : Singleton<CellGenerator>
         var startIndex = originalCells.Count;
 
         UpdateBoardValues(cellsCopy.Where(c => c.IsActive).ToList());
-        FindAllMatches();
+        FindAllMatchPairs();
 
         var spawnedGems = 0;
         var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
