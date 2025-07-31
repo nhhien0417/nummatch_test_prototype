@@ -295,38 +295,33 @@ public class CellGenerator : Singleton<CellGenerator>
     {
         _foundPairs.Clear();
 
-        var cells = Board.Instance.GetCells();
-        var total = cells.Count;
-
+        var total = _boardValues.Length;
         for (var i = 0; i < total; i++)
         {
-            if (!cells[i].IsActive) continue;
+            if (!_boardValues[i].IsActive) continue;
 
-            var valA = cells[i].Value;
+            var valA = _boardValues[i].Value;
             var row = i / GenCols;
             var col = i % GenCols;
 
             // → Right
-            FindMatchInDirection(i, row, col, 0, +1, valA, cells);
-
+            FindMatchInDirection(i, row, col, 0, +1, valA);
             // ↓ Down
-            FindMatchInDirection(i, row, col, +1, 0, valA, cells);
-
+            FindMatchInDirection(i, row, col, +1, 0, valA);
             // ↘ Diagonal Right-Down
-            FindMatchInDirection(i, row, col, +1, +1, valA, cells);
-
+            FindMatchInDirection(i, row, col, +1, +1, valA);
             // ↙ Diagonal Left-Down
-            FindMatchInDirection(i, row, col, +1, -1, valA, cells);
+            FindMatchInDirection(i, row, col, +1, -1, valA);
 
             // ➕ Linear: Nearest active in index order without blocking
             for (var j = i + 1; j < total; j++)
             {
-                if (!cells[j].IsActive) continue;
+                if (!_boardValues[j].IsActive) continue;
 
                 var blocked = false;
                 for (var k = i + 1; k < j; k++)
                 {
-                    if (cells[k].IsActive)
+                    if (_boardValues[k].IsActive)
                     {
                         blocked = true;
                         break;
@@ -335,7 +330,7 @@ public class CellGenerator : Singleton<CellGenerator>
 
                 if (blocked) break;
 
-                var valB = cells[j].Value;
+                var valB = _boardValues[j].Value;
                 if (valA == valB || valA + valB == 10)
                     _foundPairs.Add((i, j));
 
@@ -346,32 +341,30 @@ public class CellGenerator : Singleton<CellGenerator>
         Debug.Log("==== ALL MATCHES FOUND ====");
         foreach (var (a, b) in _foundPairs)
         {
-            var valA = cells[a].Value;
-            var valB = cells[b].Value;
+            var valA = _boardValues[a].Value;
+            var valB = _boardValues[b].Value;
             var type = valA == valB ? "Same" : "Sum10";
             Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
         }
     }
 
-    private void FindMatchInDirection(int startIndex, int row, int col, int dRow, int dCol, int valA, List<Cell> cells)
+    private void FindMatchInDirection(int startIndex, int row, int col, int dRow, int dCol, int valA)
     {
         var r = row + dRow;
         var c = col + dCol;
-        var totalCols = GenCols;
-        var totalRows = _totalRows;
 
-        while (r >= 0 && r < totalRows && c >= 0 && c < totalCols)
+        while (r >= 0 && r < TotalRows && c >= 0 && c < GenCols)
         {
-            var targetIndex = r * totalCols + c;
-            if (targetIndex >= cells.Count) break;
+            var targetIndex = r * GenCols + c;
+            if (targetIndex >= _boardValues.Length) break;
 
-            if (cells[targetIndex].IsActive)
+            if (_boardValues[targetIndex].IsActive)
             {
-                var valB = cells[targetIndex].Value;
+                var valB = _boardValues[targetIndex].Value;
                 if (valA == valB || valA + valB == 10)
                     _foundPairs.Add((startIndex, targetIndex));
 
-                break; // chỉ xét ô active đầu tiên theo hướng
+                break;
             }
 
             r += dRow;
