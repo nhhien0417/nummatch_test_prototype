@@ -245,12 +245,23 @@ public class Board : Singleton<Board>
         var finalHeight = Mathf.Ceil(Mathf.Max(targetContentHeight, viewportHeight) / 100f) * 100f;
         _boardContainer.sizeDelta = new Vector2(_boardContainer.sizeDelta.x, finalHeight);
 
-        GetComponent<ScrollRect>().vertical = targetContentHeight > viewportHeight;
+        var scrollRect = GetComponent<ScrollRect>();
+        scrollRect.vertical = targetContentHeight > viewportHeight;
+
+        Canvas.ForceUpdateCanvases();
+
+        var maxScrollable = finalHeight - scrollRect.viewport.rect.height;
+        var targetScroll = Mathf.Clamp01(maxScrollable > 0 ? 50f / maxScrollable : 0f);
+
+        DOTween.Kill(scrollRect, complete: false);
+        DOTween.To(() => scrollRect.verticalNormalizedPosition, value => scrollRect.verticalNormalizedPosition = value,
+                         targetScroll, 1f).SetEase(Ease.OutCubic).SetTarget(scrollRect);
     }
+
 
     public void HandleScrollPosition(Vector2 normalizedPosition)
     {
-        const float threshold = 0.01f;
+        const float threshold = 0.0001f;
         var isAtTop = normalizedPosition.y >= 1f - threshold;
         var isAtBottom = normalizedPosition.y <= threshold;
 
