@@ -23,22 +23,7 @@ public class Cell : MonoBehaviour
 
     public void SetState(bool isActive, int value, GemType gemType)
     {
-        if (!isActive)
-        {
-            DOTween.Sequence()
-            .AppendCallback(() =>
-            {
-                _foreground.transform.localScale = Vector3.one;
-                _text.gameObject.SetActive(true);
-            })
-            .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
-
-            if (_gemType != GemType.None)
-            {
-                GemManager.Instance.UpdateGemProgress(_gemType);
-                _gem.SetActive(false);
-            }
-        }
+        if (!isActive) MatchCell();
 
         _value = value;
         _isActive = isActive;
@@ -60,6 +45,23 @@ public class Cell : MonoBehaviour
             _text.gameObject.SetActive(true);
         })
        .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
+    }
+
+    private void MatchCell()
+    {
+        DOTween.Sequence()
+        .AppendCallback(() =>
+        {
+            _foreground.transform.localScale = Vector3.one;
+            _text.gameObject.SetActive(true);
+        })
+        .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
+
+        if (_gemType != GemType.None)
+        {
+            CollectGem(_gemType);
+            _gem.SetActive(false);
+        }
     }
 
     public void Select()
@@ -137,5 +139,40 @@ public class Cell : MonoBehaviour
 
         rect.DOKill();
         rect.DOAnchorPos(targetPos, 0.25f).SetEase(Ease.OutCubic);
+    }
+
+    public void CollectGem(GemType gemType)
+    {
+        var gem = Instantiate(_gem, GameplayUI.Instance.transform, false);
+        var rect = gem.GetComponent<RectTransform>();
+
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = new Vector2(100f, 100f);
+        gem.transform.GetChild(0).gameObject.SetActive(false);
+
+        var startPos = transform.position;
+        var endPos = GameplayUI.Instance.GetGemTarget(gemType).position;
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(rect.parent as RectTransform,
+            RectTransformUtility.WorldToScreenPoint(Camera.main, startPos), Camera.main, out Vector2 startLocalPos);
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(rect.parent as RectTransform,
+            RectTransformUtility.WorldToScreenPoint(Camera.main, endPos), Camera.main, out Vector2 endLocalPos);
+
+        rect.anchoredPosition = startLocalPos;
+        var peak = startLocalPos + new Vector2(0, 50f);
+        var control = Vector2.Lerp(peak, endLocalPos, 0.5f) + new Vector2(Random.Range(-200f, 200f), Random.Range(0f, 200f));
+
+        DOTween.Sequence()
+        .Append(rect.DOAnchorPos(peak, 0.25f).SetEase(Ease.OutQuad))
+        .Append(DOTween.To(() => 0f, t => rect.anchoredPosition =
+                Mathf.Pow(1 - t, 2) * peak + 2 * (1 - t) * t * control +
+                Mathf.Pow(t, 2) * endLocalPos, 1f, 0.5f).SetEase(Ease.InSine))
+        .Join(rect.DOScale(0.8f, 0.5f).SetEase(Ease.InBack))
+        .OnComplete(() =>
+        {
+            GemManager.Instance.UpdateGemProgress(gemType);
+            Destroy(gem);
+        });
     }
 }

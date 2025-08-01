@@ -53,4 +53,9 @@ public class GameplayUI : Singleton<GameplayUI>
         var gem = _gems.FirstOrDefault(g => g.GemType == gemProgress.Type);
         gem.UpdateProgress(gemProgress.RequiredAmount - gemProgress.Collected);
     }
+
+    public RectTransform GetGemTarget(GemType gemType)
+    {
+        return _gems.FirstOrDefault(t => t.GemType == gemType).GetComponent<RectTransform>();
+    }
 }
