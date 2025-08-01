@@ -127,21 +127,25 @@ public class Board : Singleton<Board>
         AudioManager.Instance.PlaySFX("clear_row");
 
         var seq = DOTween.Sequence();
-        seq.AppendCallback(() =>
+        var delay = 0.05f;
+
+        foreach (var row in clearedRows)
         {
-            foreach (var row in clearedRows)
+            var rowSeq = DOTween.Sequence();
+            for (var col = 0; col < BoardCols; col++)
             {
-                for (var col = 0; col < BoardCols; col++)
-                {
-                    var index = row * BoardCols + col;
-                    if (index >= _cells.Count) break;
+                var index = row * BoardCols + col;
+                if (index >= _cells.Count) continue;
 
-                    _cells[index].HideTextTween();
-                }
+                var cell = _cells[index];
+                rowSeq.AppendCallback(() => cell.HideCell());
+                rowSeq.AppendInterval(delay);
             }
-        });
 
-        seq.AppendInterval(0.2f);
+            seq.Join(rowSeq);
+        }
+
+        seq.AppendInterval(0.25f);
         seq.AppendCallback(() =>
         {
             for (var i = 0; i < _cells.Count; i++)
@@ -149,7 +153,7 @@ public class Board : Singleton<Board>
                 var row = i / BoardCols;
                 var shift = clearedRows.Count(r => row > r);
 
-                if (shift > 0) _cells[i].ShiftCellUpTween(shift);
+                if (shift > 0) _cells[i].ShiftCellUp(shift);
             }
         });
 

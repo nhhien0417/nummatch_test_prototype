@@ -25,13 +25,13 @@ public class Cell : MonoBehaviour
     {
         if (!isActive)
         {
-            var seq = DOTween.Sequence();
-            seq.AppendCallback(() =>
+            DOTween.Sequence()
+            .AppendCallback(() =>
             {
                 _foreground.transform.localScale = Vector3.one;
                 _text.gameObject.SetActive(true);
-            });
-            seq.Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
+            })
+            .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
 
             if (_gemType != GemType.None)
             {
@@ -51,15 +51,15 @@ public class Cell : MonoBehaviour
 
     public void Spawn(float delay = 0f)
     {
-        var seq = DOTween.Sequence();
-        seq.AppendInterval(delay);
-        seq.AppendCallback(() =>
+        DOTween.Sequence()
+        .AppendInterval(delay)
+        .AppendCallback(() =>
         {
             _foreground.transform.localScale = Vector3.one;
             _gem.SetActive(_gemType != GemType.None);
             _text.gameObject.SetActive(true);
-        });
-        seq.Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
+        })
+       .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
     }
 
     public void Select()
@@ -118,13 +118,18 @@ public class Cell : MonoBehaviour
         _text.rectTransform.DOPunchPosition(new(-15f, 0, 0), 0.2f, 20, -15f, true);
     }
 
-    public void HideTextTween()
+    public void HideCell()
     {
-        _text.DOKill();
-        _text.DOFade(0f, 0.2f).SetEase(Ease.InSine);
+        DOTween.Sequence()
+        .AppendCallback(() =>
+        {
+            _foreground.transform.localScale = Vector3.one;
+        })
+        .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack))
+        .Join(_text.DOFade(0f, 0.2f).SetEase(Ease.InSine));
     }
 
-    public void ShiftCellUpTween(int rows)
+    public void ShiftCellUp(int rows)
     {
         var rect = GetComponent<RectTransform>();
         var shiftY = rows * rect.rect.height;
