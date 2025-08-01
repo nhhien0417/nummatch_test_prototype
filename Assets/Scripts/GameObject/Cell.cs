@@ -59,7 +59,7 @@ public class Cell : MonoBehaviour
             _gem.SetActive(_gemType != GemType.None);
             _text.gameObject.SetActive(true);
         });
-        seq.Append(_foreground.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.InBack));
+        seq.Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
     }
 
     public void Select()

@@ -385,7 +385,9 @@ public class CellGenerator : Singleton<CellGenerator>
     public void CloneCells()
     {
         if (GameManager.Instance.AddCount <= 0) return;
+        
         GameManager.Instance.UpdateAddCount();
+        AudioManager.Instance.PlaySFX("pop_button");
 
         var originalCells = Board.Instance.GetCells();
         var cellsCopy = originalCells.ToList();

@@ -17,6 +17,7 @@ public class GameplayUI : Singleton<GameplayUI>
     {
         DOTween.KillAll();
         SceneManager.LoadScene("Home");
+        AudioManager.Instance.PlaySFX("pop_button");
     }
 
     public void UpdateStageText()
