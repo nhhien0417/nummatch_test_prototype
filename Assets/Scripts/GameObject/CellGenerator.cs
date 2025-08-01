@@ -31,11 +31,12 @@ public class CellGenerator : Singleton<CellGenerator>
     public int TotalRows => Mathf.CeilToInt((float)_boardData.Length / GenCols);
 
     #region Update State
-    private Cell SpawnCell(int value, GemType gemType)
+    private Cell SpawnCell(int value, GemType gemType, float delay)
     {
         var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
         cell.name = "Cell";
         cell.SetState(true, value, gemType);
+        cell.Spawn(delay);
 
         return cell;
     }
@@ -134,7 +135,8 @@ public class CellGenerator : Singleton<CellGenerator>
             }
 
             // Spawn cell
-            var cell = SpawnCell(value, gemTypeToSpawn);
+            var delay = i * 0.05f;
+            var cell = SpawnCell(value, gemTypeToSpawn, delay);
             Board.Instance.GetCells().Add(cell);
 
             if (shouldSpawnGem)
@@ -401,6 +403,8 @@ public class CellGenerator : Singleton<CellGenerator>
         var forceSpawnGem = false;
         var spawnedGemIndexes = new List<int>();
 
+        var delay = 0f;
+
         for (int i = 0; i < cellsCopy.Count; i++)
         {
             var originalCell = cellsCopy[i];
@@ -423,7 +427,8 @@ public class CellGenerator : Singleton<CellGenerator>
                 }
             }
 
-            var clone = SpawnCell(value, gemTypeToSpawn);
+            delay += 0.05f;
+            var clone = SpawnCell(value, gemTypeToSpawn, delay);
             originalCells.Add(clone);
 
             if (shouldSpawnGem)

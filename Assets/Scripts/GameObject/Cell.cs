@@ -26,6 +26,7 @@ public class Cell : MonoBehaviour
         if (!isActive && _gemType != GemType.None)
         {
             GemManager.Instance.UpdateGemProgress(_gemType);
+            _gem.SetActive(false);
         }
 
         _value = value;
@@ -34,15 +35,20 @@ public class Cell : MonoBehaviour
 
         _text.text = value.ToString();
         _text.color = Utils.GetHexColor(isActive ? (gemType == GemType.None ? "#1E5564" : "#EEEEEE") : "#D1D9D4");
-
-        _gem.SetActive(gemType != GemType.None);
         _gem.GetComponent<Image>().sprite = GemManager.Instance.GetGemEntries().TryGetValue(gemType, out var sprite) ? sprite : null;
     }
 
-    public void Spawn()
+    public void Spawn(float delay = 0f)
     {
-        _foreground.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.InBack);
-        _foreground.GetComponent<Image>().DOFade(0f, 0.5f).SetEase(Ease.InSine);
+        var seq = DOTween.Sequence();
+        seq.AppendInterval(delay);
+        seq.AppendCallback(() =>
+        {
+            _foreground.transform.localScale = Vector3.one;
+            _gem.SetActive(_gemType != GemType.None);
+            _text.gameObject.SetActive(true);
+        });
+        seq.Append(_foreground.transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.InBack));
     }
 
     public void Select()

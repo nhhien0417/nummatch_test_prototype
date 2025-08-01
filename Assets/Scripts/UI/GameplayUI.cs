@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -14,6 +15,7 @@ public class GameplayUI : Singleton<GameplayUI>
 
     public void BackToHome()
     {
+        DOTween.KillAll();
         SceneManager.LoadScene("Home");
     }
 
