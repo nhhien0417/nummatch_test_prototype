@@ -59,9 +59,9 @@ public class CellGenerator : Singleton<CellGenerator>
         }
 
         // var sb = new System.Text.StringBuilder();
-        // for (int i = 0; i < _boardValues.Length; i++)
+        // for (int i = 0; i < _boardData.Length; i++)
         // {
-        //     var cell = _boardValues[i];
+        //     var cell = _boardData[i];
         //     sb.Append(cell.IsActive ? cell.Value.ToString() : "X");
         //     sb.Append(' ');
 
@@ -385,7 +385,7 @@ public class CellGenerator : Singleton<CellGenerator>
     public void CloneCells()
     {
         if (GameManager.Instance.AddCount <= 0) return;
-        
+
         GameManager.Instance.UpdateAddCount();
         AudioManager.Instance.PlaySFX("pop_button");
 
