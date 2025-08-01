@@ -23,10 +23,21 @@ public class Cell : MonoBehaviour
 
     public void SetState(bool isActive, int value, GemType gemType)
     {
-        if (!isActive && _gemType != GemType.None)
+        if (!isActive)
         {
-            GemManager.Instance.UpdateGemProgress(_gemType);
-            _gem.SetActive(false);
+            var seq = DOTween.Sequence();
+            seq.AppendCallback(() =>
+            {
+                _foreground.transform.localScale = Vector3.one;
+                _text.gameObject.SetActive(true);
+            });
+            seq.Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
+
+            if (_gemType != GemType.None)
+            {
+                GemManager.Instance.UpdateGemProgress(_gemType);
+                _gem.SetActive(false);
+            }
         }
 
         _value = value;
