@@ -340,14 +340,14 @@ public class CellGenerator : Singleton<CellGenerator>
             }
         }
 
-        Debug.Log("==== ALL MATCHES FOUND ====");
-        foreach (var (a, b) in _foundPairs)
-        {
-            var valA = _boardData[a].Value;
-            var valB = _boardData[b].Value;
-            var type = valA == valB ? "Same" : "Sum10";
-            Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
-        }
+        // Debug.Log("==== ALL MATCHES FOUND ====");
+        // foreach (var (a, b) in _foundPairs)
+        // {
+        //     var valA = _boardData[a].Value;
+        //     var valB = _boardData[b].Value;
+        //     var type = valA == valB ? "Same" : "Sum10";
+        //     Debug.Log($"Pair: [{a}]({valA}) ↔ [{b}]({valB}) => {type}");
+        // }
     }
 
     private void FindMatchInDirection(int startIndex, int row, int col, int dRow, int dCol, int valA)
@@ -390,10 +390,10 @@ public class CellGenerator : Singleton<CellGenerator>
         AudioManager.Instance.PlaySFX("pop_button");
 
         var originalCells = Board.Instance.GetCells();
-        var cellsCopy = originalCells.ToList();
+        var cellsCopy = originalCells.Where(c => c.IsActive).ToList();
         var startIndex = originalCells.Count;
 
-        UpdateBoardValues(cellsCopy.Where(c => c.IsActive).ToList());
+        UpdateBoardValues(cellsCopy);
         FindAllMatchPairs();
 
         var spawnedGems = 0;
