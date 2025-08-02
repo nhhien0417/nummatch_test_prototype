@@ -159,7 +159,9 @@ public class CellGenerator : Singleton<CellGenerator>
         _boardData = new CellData[GenCells];
         _matchPairs = PickMatchPairs(pairsCount);
 
+        var matchedIndices = new HashSet<int>();
         var valuePool = new List<int>();
+
         for (var i = 1; i <= GenCols; i++)
             for (var j = 0; j < GenRows; j++)
                 valuePool.Add(i);
@@ -178,10 +180,14 @@ public class CellGenerator : Singleton<CellGenerator>
                     var otherVal = _boardData[otherIndex].Value;
                     value = PickMatchingValue(otherVal, valuePool);
                     if (value == -1) return false;
+
+                    matchedIndices.Add(index);
+                    matchedIndices.Add(otherIndex);
                 }
                 else
                 {
-                    value = PickRandomValue(valuePool);
+                    value = PickRandomValue(index, valuePool, matchedIndices);
+                    if (value == -1) return false;
                 }
             }
             else
@@ -190,7 +196,7 @@ public class CellGenerator : Singleton<CellGenerator>
                 if (value == -1) return false;
             }
 
-            _boardData[index] = new CellData(value, true);
+            _boardData[index] = new(value, true);
             valuePool.Remove(value);
         }
 
@@ -241,7 +247,21 @@ public class CellGenerator : Singleton<CellGenerator>
         return selected;
     }
 
-    private int PickRandomValue(List<int> pool) => pool[Random.Range(0, pool.Count)];
+    private int PickRandomValue(int index, List<int> pool, HashSet<int> matchedIndices)
+    {
+        var candidates = new List<int>(pool);
+
+        foreach (var neighbor in GetNeighborIndices(index))
+        {
+            var neighborVal = _boardData[neighbor].Value;
+            var neighborAlreadyMatched = matchedIndices.Contains(neighbor);
+
+            candidates = candidates.Where(v => !(v == neighborVal || v + neighborVal == 10) || !neighborAlreadyMatched).ToList();
+            if (candidates.Count == 0) return -1;
+        }
+
+        return candidates[Random.Range(0, candidates.Count)];
+    }
 
     private int PickMatchingValue(int other, List<int> pool)
     {
