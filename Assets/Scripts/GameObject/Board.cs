@@ -9,9 +9,11 @@ public class Board : Singleton<Board>
     [SerializeField] private GameObject _topFade, _bottomFade;
     [SerializeField] private RectTransform _boardContainer;
 
+    private const int BoardCols = 9;
+    private bool _isAnimating;
+
     private List<Cell> _cells = new();
     private Cell _selectedCell;
-    private const int BoardCols = 9;
 
     public int TotalRows => Mathf.CeilToInt((float)_cells.Count / BoardCols);
     public List<Cell> GetCells()
@@ -122,6 +124,7 @@ public class Board : Singleton<Board>
         }
 
         if (clearedRows.Count == 0) return false;
+        _isAnimating = true;
 
         CellGenerator.Instance.SetGridLayout(false);
         AudioManager.Instance.PlaySFX("clear_row");
@@ -179,6 +182,8 @@ public class Board : Singleton<Board>
             CellGenerator.Instance.UpdateBoardValues();
             GameManager.Instance.CheckLoseGame();
             CellGenerator.Instance.SetGridLayout(true);
+
+            _isAnimating = false;
         });
 
         return true;
@@ -211,6 +216,8 @@ public class Board : Singleton<Board>
 
         if (CanMatch(_selectedCell, targetCell))
         {
+            if (_isAnimating) return;
+
             var (index1, index2) = CellGenerator.Instance.GetHintedPair();
             _cells[index1].UnHint();
             _cells[index2].UnHint();
