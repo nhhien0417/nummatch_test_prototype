@@ -28,9 +28,9 @@ public class NumMatchSolverEditor : EditorWindow
 
     void Solve(string input)
     {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-
-        const int COLS = 9;
+        var COLS = 9;
+        var stopwatch = Stopwatch.StartNew();
+        
         var rows = Mathf.CeilToInt(input.Length / (float)COLS);
         var board = new Cell[rows, COLS];
         var cells = new List<Cell>();
@@ -64,12 +64,9 @@ public class NumMatchSolverEditor : EditorWindow
         DFS(matches, 0, new List<Match>(), 0, requiredGem, new HashSet<int>(), solutions);
 
         var top10 = solutions.OrderByDescending(s => s.Count(m => m.A.IsGem || m.B.IsGem))
-                             .ThenBy(s => s.Count)
-                             .Take(10)
-                             .ToList();
+                             .ThenBy(s => s.Count).Take(10).ToList();
 
         SaveToFile(top10);
-
         stopwatch.Stop();
         UnityEngine.Debug.Log($"\u2705 Done in {stopwatch.ElapsedMilliseconds}ms. Saved to output.txt");
     }
