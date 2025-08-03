@@ -219,7 +219,7 @@ public class Board : Singleton<Board>
         {
             if (_isAnimating) return;
 
-            var (index1, index2) = BoardController.Instance.GetHintedPair();
+            var (index1, index2) = Hint.Instance.GetHintedPair();
             _cells[index1].UnHint();
             _cells[index2].UnHint();
 

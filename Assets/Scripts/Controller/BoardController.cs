@@ -24,7 +24,6 @@ public class BoardController : Singleton<BoardController>
     private const int GenCols = 9;
     private const int GenCells = GenRows * GenCols;
 
-    private (int, int) _lastHint = default;
     private List<(int, int)> _matchPairs = new();
     private HashSet<(int, int)> _foundPairs = new();
     private CellData[] _boardData = new CellData[GenCells];
@@ -32,7 +31,7 @@ public class BoardController : Singleton<BoardController>
     public int TotalRows => Mathf.CeilToInt((float)_boardData.Length / GenCols);
 
     #region Update State
-    private Cell SpawnCell(int value, GemType gemType, float delay)
+    public Cell SpawnCell(int value, GemType gemType, float delay)
     {
         var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
         cell.name = "Cell";
@@ -40,6 +39,11 @@ public class BoardController : Singleton<BoardController>
         cell.Spawn(delay);
 
         return cell;
+    }
+
+    public HashSet<(int, int)> GetFoundPairs()
+    {
+        return _foundPairs;
     }
 
     public void SetGridLayout(bool enabled)
@@ -314,7 +318,7 @@ public class BoardController : Singleton<BoardController>
         }
     }
 
-    private void FindAllMatchPairs()
+    public void FindAllMatchPairs()
     {
         _foundPairs.Clear();
 
@@ -402,79 +406,8 @@ public class BoardController : Singleton<BoardController>
     }
     #endregion
 
-    #region Clone Cells
-    public void CloneCells()
-    {
-        AudioManager.Instance.PlaySFX("pop_button");
-        if (GameManager.Instance.AddCount <= 0 || Board.Instance.IsAnimating) return;
-
-        GameManager.Instance.UpdateAddCount();
-
-        var originalCells = Board.Instance.GetCells();
-        var cellsCopy = originalCells.Where(c => c.IsActive).ToList();
-        var startIndex = originalCells.Count;
-
-        UpdateBoardValues(cellsCopy);
-        FindAllMatchPairs();
-
-        var spawnedGems = 0;
-        var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
-
-        var spawnGemCounter = 0;
-        var gemInterval = Mathf.CeilToInt((cellsCopy.Count + 1) / 2); // Y
-
-        var forceSpawnGem = false;
-        var spawnedGemIndexes = new List<int>();
-
-        var delay = 0f;
-
-        for (int i = 0; i < cellsCopy.Count; i++)
-        {
-            var originalCell = cellsCopy[i];
-            if (!originalCell.IsActive) continue;
-            var currentIndex = startIndex + i;
-
-            var value = originalCell.Value;
-            var shouldSpawnGem = false;
-            var gemTypeToSpawn = GemType.None;
-
-            if (spawnedGems < maxGems)
-            {
-                var chance = Random.Range(5f, 8f); // X%
-
-                if ((forceSpawnGem || Random.Range(0f, 100f) < chance) && IsSafeToSpawnGem(currentIndex, spawnedGemIndexes))
-                {
-                    var validGemTypes = GemManager.Instance.AvailableGemTypes;
-                    gemTypeToSpawn = validGemTypes[Random.Range(0, validGemTypes.Count)];
-                    shouldSpawnGem = true;
-                }
-            }
-
-            delay += 0.05f;
-            var clone = SpawnCell(value, gemTypeToSpawn, delay);
-            originalCells.Add(clone);
-
-            if (shouldSpawnGem)
-            {
-                spawnedGems++;
-                spawnGemCounter = 0;
-                spawnedGemIndexes.Add(currentIndex);
-            }
-            else
-            {
-                spawnGemCounter++;
-            }
-
-            forceSpawnGem = spawnGemCounter >= gemInterval || !AnySafeIndexRemaining(currentIndex + 1, spawnedGemIndexes);
-        }
-
-        Board.Instance.UpdateContainerHeight();
-        GameManager.Instance.CheckLoseGame();
-    }
-    #endregion
-
     #region Spawn Conditions
-    private bool IsSafeToSpawnGem(int index, List<int> spawnedGemIndexes)
+    public bool IsSafeToSpawnGem(int index, List<int> spawnedGemIndexes)
     {
         foreach (var gemIndex in spawnedGemIndexes)
             if (_foundPairs.Contains((gemIndex, index)) || _foundPairs.Contains((index, gemIndex)))
@@ -483,55 +416,13 @@ public class BoardController : Singleton<BoardController>
         return true;
     }
 
-    private bool AnySafeIndexRemaining(int startIndex, List<int> spawnedGemIndexes)
+    public bool AnySafeIndexRemaining(int startIndex, List<int> spawnedGemIndexes)
     {
         for (int i = startIndex; i < _boardData.Length; i++)
             if (IsSafeToSpawnGem(i, spawnedGemIndexes))
                 return true;
 
         return false;
-    }
-    #endregion
-
-    #region Hint
-    private (int, int) GetRandomPair()
-    {
-        if (_foundPairs.Count == 0)
-            return default;
-
-        var randomIndex = Random.Range(0, _foundPairs.Count);
-        return _foundPairs.ElementAt(randomIndex);
-    }
-
-    public (int, int) GetHintedPair()
-    {
-        var pair = _lastHint;
-        _lastHint = default;
-
-        return pair;
-    }
-
-    public void Hint()
-    {
-        AudioManager.Instance.PlaySFX("pop_button");
-        if (_lastHint != default || GameManager.Instance.HintCount <= 0 || Board.Instance.IsAnimating)
-            return;
-
-        var pair = GetRandomPair();
-        if (pair == default)
-        {
-            GameplayUI.Instance.HighlightAddBtn();
-            return;
-        }
-
-        _lastHint = pair;
-
-        GameManager.Instance.UpdateHintCount();
-        var cell1 = Board.Instance.GetCells()[pair.Item1];
-        var cell2 = Board.Instance.GetCells()[pair.Item2];
-
-        cell1.Hint();
-        cell2.Hint();
     }
     #endregion
 }

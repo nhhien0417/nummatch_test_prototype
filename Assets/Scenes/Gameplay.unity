@@ -638,6 +638,7 @@ GameObject:
   - component: {fileID: 296323569}
   - component: {fileID: 296323568}
   - component: {fileID: 296323567}
+  - component: {fileID: 296323570}
   m_Layer: 5
   m_Name: AddButton
   m_TagString: Untagged
@@ -712,9 +713,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 929215241}
-        m_TargetAssemblyTypeName: StageManager, Assembly-CSharp
-        m_MethodName: CloneCells
+      - m_Target: {fileID: 296323570}
+        m_TargetAssemblyTypeName: AddNumbers, Assembly-CSharp
+        m_MethodName: CloneCell
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -762,6 +763,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 296323565}
   m_CullTransparentMesh: 1
+--- !u!114 &296323570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 296323565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a79919de86f85f4bb0f320eca3b1389, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &304768611
 GameObject:
   m_ObjectHideFlags: 0
@@ -2905,6 +2918,7 @@ GameObject:
   - component: {fileID: 1378688034}
   - component: {fileID: 1378688033}
   - component: {fileID: 1378688032}
+  - component: {fileID: 1378688035}
   m_Layer: 5
   m_Name: HintButton
   m_TagString: Untagged
@@ -2979,9 +2993,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 929215241}
-        m_TargetAssemblyTypeName: CellGenerator, Assembly-CSharp
-        m_MethodName: Hint
+      - m_Target: {fileID: 1378688035}
+        m_TargetAssemblyTypeName: Hint, Assembly-CSharp
+        m_MethodName: ShowHint
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3029,6 +3043,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1378688030}
   m_CullTransparentMesh: 1
+--- !u!114 &1378688035
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1378688030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cdfa72a4c810144fae9eba3c355e83c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1459168829
 GameObject:
   m_ObjectHideFlags: 0
