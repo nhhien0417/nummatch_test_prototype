@@ -3,18 +3,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
-public struct CellData
-{
-    public int Value;
-    public bool IsActive;
-
-    public CellData(int value, bool isActive)
-    {
-        Value = value;
-        IsActive = isActive;
-    }
-}
-
 public class BoardController : Singleton<BoardController>
 {
     [SerializeField] private GameObject _cellPrefab;
