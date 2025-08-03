@@ -406,7 +406,7 @@ public class CellGenerator : Singleton<CellGenerator>
     public void CloneCells()
     {
         AudioManager.Instance.PlaySFX("pop_button");
-        if (GameManager.Instance.AddCount <= 0) return;
+        if (GameManager.Instance.AddCount <= 0 || Board.Instance.IsAnimating) return;
 
         GameManager.Instance.UpdateAddCount();
 
@@ -514,11 +514,16 @@ public class CellGenerator : Singleton<CellGenerator>
     public void Hint()
     {
         AudioManager.Instance.PlaySFX("pop_button");
-        if (_lastHint != default || GameManager.Instance.HintCount <= 0)
+        if (_lastHint != default || GameManager.Instance.HintCount <= 0 || Board.Instance.IsAnimating)
             return;
 
         var pair = GetRandomPair();
-        if (pair == default) return;
+        if (pair == default)
+        {
+            GameplayUI.Instance.HighlightAddBtn();
+            return;
+        }
+
         _lastHint = pair;
 
         GameManager.Instance.UpdateHintCount();

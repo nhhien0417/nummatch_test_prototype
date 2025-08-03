@@ -625,6 +625,7 @@ MonoBehaviour:
   _hintText: {fileID: 304768613}
   _gemContainer: {fileID: 1914021910}
   _gemPrefab: {fileID: 3838243518465305227, guid: d8d64315fc393754ca701559e886c8fe, type: 3}
+  _addButton: {fileID: 296323565}
 --- !u!1 &296323565
 GameObject:
   m_ObjectHideFlags: 0

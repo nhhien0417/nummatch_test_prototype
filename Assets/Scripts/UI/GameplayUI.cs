@@ -9,7 +9,7 @@ public class GameplayUI : Singleton<GameplayUI>
 {
     [SerializeField] private TextMeshProUGUI _stageText, _addText, _hintText;
     [SerializeField] private Transform _gemContainer;
-    [SerializeField] private GameObject _gemPrefab;
+    [SerializeField] private GameObject _gemPrefab, _addButton;
 
     private List<Gem> _gems = new();
 
@@ -33,6 +33,14 @@ public class GameplayUI : Singleton<GameplayUI>
     public void UpdateHintText()
     {
         _hintText.text = GameManager.Instance.HintCount.ToString();
+    }
+
+    public void HighlightAddBtn()
+    {
+        _addButton.transform.DOKill();
+        _addButton.transform.localScale = Vector3.one;
+        _addButton.transform.DOScale(0.9f, 0.25f).SetEase(Ease.OutQuad)
+        .OnComplete(() => _addButton.transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack));
     }
 
     public void SetupGems()

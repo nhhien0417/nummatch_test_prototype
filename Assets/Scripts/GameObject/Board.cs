@@ -16,6 +16,7 @@ public class Board : Singleton<Board>
     private Cell _selectedCell;
 
     public int TotalRows => Mathf.CeilToInt((float)_cells.Count / BoardCols);
+    public bool IsAnimating => _isAnimating;
     public List<Cell> GetCells()
     {
         return _cells;
