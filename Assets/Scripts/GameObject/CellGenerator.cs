@@ -491,4 +491,30 @@ public class CellGenerator : Singleton<CellGenerator>
         return false;
     }
     #endregion
+
+    #region Hint
+    private (int, int) GetRandomPair()
+    {
+        if (_foundPairs.Count == 0)
+            return default;
+
+        var randomIndex = Random.Range(0, _foundPairs.Count);
+        return _foundPairs.ElementAt(randomIndex);
+    }
+
+    public void Hint()
+    {
+        if (GameManager.Instance.HintCount <= 0) return;
+
+        GameManager.Instance.UpdateHintCount();
+        AudioManager.Instance.PlaySFX("pop_button");
+
+        var pair = GetRandomPair();
+        var cell1 = Board.Instance.GetCells()[pair.Item1];
+        var cell2 = Board.Instance.GetCells()[pair.Item2];
+
+        cell1.Hint();
+        cell2.Hint();
+    }
+    #endregion
 }

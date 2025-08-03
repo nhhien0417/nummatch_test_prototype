@@ -141,6 +141,13 @@ public class Cell : MonoBehaviour
         rect.DOAnchorPos(targetPos, 0.25f).SetEase(Ease.OutCubic);
     }
 
+    public void Hint()
+    {
+        _text.rectTransform.localScale = Vector3.one;
+        _text.rectTransform.DOKill();
+        _text.rectTransform.DOScale(1.15f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+    }
+
     public void CollectGem(GemType gemType)
     {
         var gem = Instantiate(_gem, GameplayUI.Instance.transform, false);

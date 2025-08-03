@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 
 public class GameplayUI : Singleton<GameplayUI>
 {
-    [SerializeField] private TextMeshProUGUI _stageText, _addText;
+    [SerializeField] private TextMeshProUGUI _stageText, _addText, _hintText;
     [SerializeField] private Transform _gemContainer;
     [SerializeField] private GameObject _gemPrefab;
 
@@ -28,6 +28,11 @@ public class GameplayUI : Singleton<GameplayUI>
     public void UpdateAddText()
     {
         _addText.text = GameManager.Instance.AddCount.ToString();
+    }
+
+    public void UpdateHintText()
+    {
+        _hintText.text = GameManager.Instance.HintCount.ToString();
     }
 
     public void SetupGems()

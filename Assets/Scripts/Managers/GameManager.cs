@@ -2,9 +2,14 @@ using System.Linq;
 
 public class GameManager : SingletonPersistent<GameManager>
 {
-    private int _currentStage, _addCount;
+    private int _currentStage, _addCount, _hintCount;
+
+    private const int AddInit = 6;
+    private const int HintInit = 6;
+
     public int CurrentStage => _currentStage;
     public int AddCount => _addCount;
+    public int HintCount => _hintCount;
 
     public void NewGame()
     {
@@ -17,17 +22,25 @@ public class GameManager : SingletonPersistent<GameManager>
     public void UpdateNewStage(int stage)
     {
         _currentStage = stage;
-        _addCount = 6;
+        _addCount = AddInit;
+        _hintCount = HintInit;
 
         CellGenerator.Instance.GenerateBoard();
         GameplayUI.Instance.UpdateStageText();
         GameplayUI.Instance.UpdateAddText();
+        GameplayUI.Instance.UpdateHintText();
     }
 
     public void UpdateAddCount()
     {
         _addCount--;
         GameplayUI.Instance.UpdateAddText();
+    }
+
+    public void UpdateHintCount()
+    {
+        _hintCount--;
+        GameplayUI.Instance.UpdateHintText();
     }
     #endregion
 
