@@ -18,7 +18,7 @@ public class BoardController : Singleton<BoardController>
 
     public int TotalRows => Mathf.CeilToInt((float)_boardData.Length / GenCols);
 
-    #region Update State
+    #region State
     public Cell SpawnCell(int value, GemType gemType, float delay)
     {
         var cell = Instantiate(_cellPrefab, _container).GetComponent<Cell>();
@@ -65,7 +65,7 @@ public class BoardController : Singleton<BoardController>
     }
     #endregion
 
-    #region Generate Board
+    #region Stage Generator
     public void GenerateBoard()
     {
         var attempt = 0;
