@@ -13,6 +13,7 @@ public class GameplayUI : Singleton<GameplayUI>
 
     private List<Gem> _gems = new();
 
+    #region MainUI
     public void BackToHome()
     {
         DOTween.KillAll();
@@ -42,7 +43,9 @@ public class GameplayUI : Singleton<GameplayUI>
         _addButton.transform.DOScale(0.9f, 0.25f).SetEase(Ease.OutQuad)
         .OnComplete(() => _addButton.transform.DOScale(1f, 0.3f).SetEase(Ease.OutBack));
     }
+    #endregion
 
+    #region Gem Progresses
     public void SetupGems()
     {
         foreach (var gem in _gems)
@@ -71,4 +74,5 @@ public class GameplayUI : Singleton<GameplayUI>
     {
         return _gems.FirstOrDefault(t => t.GemType == gemType).GetComponent<RectTransform>();
     }
+    #endregion
 }

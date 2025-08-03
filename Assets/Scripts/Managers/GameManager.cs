@@ -44,7 +44,7 @@ public class GameManager : SingletonPersistent<GameManager>
     }
     #endregion
 
-    #region Handle Game Over
+    #region Game Over
     public void CheckWinGame()
     {
         var isWin = GemManager.Instance.GemProgresses.All(g => g.Collected == g.RequiredAmount);
