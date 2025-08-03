@@ -25,7 +25,7 @@ public class GameManager : SingletonPersistent<GameManager>
         _addCount = AddInit;
         _hintCount = HintInit;
 
-        CellGenerator.Instance.GenerateBoard();
+        BoardController.Instance.GenerateBoard();
         GameplayUI.Instance.UpdateStageText();
         GameplayUI.Instance.UpdateAddText();
         GameplayUI.Instance.UpdateHintText();
@@ -55,7 +55,7 @@ public class GameManager : SingletonPersistent<GameManager>
 
     public void CheckLoseGame()
     {
-        var isLose = !CellGenerator.Instance.AnyPair() && _addCount <= 0;
+        var isLose = !BoardController.Instance.AnyPair() && _addCount <= 0;
         if (!isLose) return;
 
         PopupController.Instance.ShowPopup(PopupController.Popup.LosePopup);

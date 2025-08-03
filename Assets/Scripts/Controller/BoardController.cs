@@ -15,7 +15,7 @@ public struct CellData
     }
 }
 
-public class CellGenerator : Singleton<CellGenerator>
+public class BoardController : Singleton<BoardController>
 {
     [SerializeField] private GameObject _cellPrefab;
     [SerializeField] private Transform _container;

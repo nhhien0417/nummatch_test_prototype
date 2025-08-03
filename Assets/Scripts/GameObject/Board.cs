@@ -127,7 +127,7 @@ public class Board : Singleton<Board>
         if (clearedRows.Count == 0) return false;
         _isAnimating = true;
 
-        CellGenerator.Instance.SetGridLayout(false);
+        BoardController.Instance.SetGridLayout(false);
         AudioManager.Instance.PlaySFX("clear_row");
 
         var seq = DOTween.Sequence();
@@ -180,9 +180,9 @@ public class Board : Singleton<Board>
             CheckClearBoard();
             UpdateContainerHeight();
 
-            CellGenerator.Instance.UpdateBoardValues();
+            BoardController.Instance.UpdateBoardValues();
             GameManager.Instance.CheckLoseGame();
-            CellGenerator.Instance.SetGridLayout(true);
+            BoardController.Instance.SetGridLayout(true);
 
             _isAnimating = false;
         });
@@ -219,7 +219,7 @@ public class Board : Singleton<Board>
         {
             if (_isAnimating) return;
 
-            var (index1, index2) = CellGenerator.Instance.GetHintedPair();
+            var (index1, index2) = BoardController.Instance.GetHintedPair();
             _cells[index1].UnHint();
             _cells[index2].UnHint();
 
@@ -230,7 +230,7 @@ public class Board : Singleton<Board>
             if (!CheckClearRow())
             {
                 AudioManager.Instance.PlaySFX("match_cell");
-                CellGenerator.Instance.UpdateBoardValues();
+                BoardController.Instance.UpdateBoardValues();
                 GameManager.Instance.CheckLoseGame();
             }
 
