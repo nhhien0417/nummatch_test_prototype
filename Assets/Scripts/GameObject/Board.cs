@@ -211,6 +211,10 @@ public class Board : Singleton<Board>
 
         if (CanMatch(_selectedCell, targetCell))
         {
+            var (index1, index2) = CellGenerator.Instance.GetHintedPair();
+            _cells[index1].UnHint();
+            _cells[index2].UnHint();
+
             _selectedCell.Deselect();
             _selectedCell.SetState(false, _selectedCell.Value, GemType.None);
             targetCell.SetState(false, targetCell.Value, GemType.None);

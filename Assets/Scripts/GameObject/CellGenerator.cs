@@ -24,6 +24,7 @@ public class CellGenerator : Singleton<CellGenerator>
     private const int GenCols = 9;
     private const int GenCells = GenRows * GenCols;
 
+    private (int, int) _lastHint = default;
     private List<(int, int)> _matchPairs = new();
     private HashSet<(int, int)> _foundPairs = new();
     private CellData[] _boardData = new CellData[GenCells];
@@ -404,10 +405,10 @@ public class CellGenerator : Singleton<CellGenerator>
     #region Clone Cells
     public void CloneCells()
     {
+        AudioManager.Instance.PlaySFX("pop_button");
         if (GameManager.Instance.AddCount <= 0) return;
 
         GameManager.Instance.UpdateAddCount();
-        AudioManager.Instance.PlaySFX("pop_button");
 
         var originalCells = Board.Instance.GetCells();
         var cellsCopy = originalCells.Where(c => c.IsActive).ToList();
@@ -502,14 +503,25 @@ public class CellGenerator : Singleton<CellGenerator>
         return _foundPairs.ElementAt(randomIndex);
     }
 
+    public (int, int) GetHintedPair()
+    {
+        var pair = _lastHint;
+        _lastHint = default;
+
+        return pair;
+    }
+
     public void Hint()
     {
-        if (GameManager.Instance.HintCount <= 0) return;
-
-        GameManager.Instance.UpdateHintCount();
         AudioManager.Instance.PlaySFX("pop_button");
+        if (_lastHint != default || GameManager.Instance.HintCount <= 0)
+            return;
 
         var pair = GetRandomPair();
+        if (pair == default) return;
+        _lastHint = pair;
+
+        GameManager.Instance.UpdateHintCount();
         var cell1 = Board.Instance.GetCells()[pair.Item1];
         var cell2 = Board.Instance.GetCells()[pair.Item2];
 

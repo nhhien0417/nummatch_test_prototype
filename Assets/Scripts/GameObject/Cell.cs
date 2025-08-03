@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class Cell : MonoBehaviour
 {
-    [SerializeField] private GameObject _background, _foreground, _gem, _gemBG;
+    [SerializeField] private GameObject _background, _foreground, _gem, _gemBG, _hint;
     [SerializeField] private TextMeshProUGUI _text;
     [SerializeField] private Button _button;
 
@@ -23,6 +23,9 @@ public class Cell : MonoBehaviour
 
     public void SetState(bool isActive, int value, GemType gemType)
     {
+        transform.DOKill();
+        transform.localScale = Vector3.one;
+
         if (!isActive) MatchCell();
 
         _value = value;
@@ -53,7 +56,7 @@ public class Cell : MonoBehaviour
         .AppendCallback(() =>
         {
             _foreground.transform.localScale = Vector3.one;
-            _text.gameObject.SetActive(true);
+            _hint.transform.localScale = Vector3.zero;
         })
         .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
 
@@ -143,9 +146,23 @@ public class Cell : MonoBehaviour
 
     public void Hint()
     {
-        _text.rectTransform.localScale = Vector3.one;
-        _text.rectTransform.DOKill();
-        _text.rectTransform.DOScale(1.15f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+        _hint.transform.DOKill();
+        _hint.transform.DOScale(Vector3.one, 0.25f).SetEase(Ease.OutBack);
+        _hint.GetComponent<Image>().DOFade(1f, 0.2f).SetEase(Ease.OutSine);
+
+        transform.localScale = Vector3.one;
+        transform.DOKill();
+        transform.DOScale(1.05f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+    }
+
+    public void UnHint()
+    {
+        transform.DOKill();
+        transform.localScale = Vector3.one;
+
+        _hint.transform.DOKill();
+        _hint.transform.DOScale(Vector3.zero, 0.25f).SetEase(Ease.InBack);
+        _hint.GetComponent<Image>().DOFade(0f, 0.2f).SetEase(Ease.InSine);
     }
 
     public void CollectGem(GemType gemType)
