@@ -71,7 +71,7 @@ public class NumMatchSolverEditor : EditorWindow
         }
     }
 
-    private const int SAFETY_LIMIT = 1000000;
+    private const int SAFETY_LIMIT = 100000;
     private const int COLS = 9;
 
     private string _inputText = "";
@@ -163,6 +163,8 @@ public class NumMatchSolverEditor : EditorWindow
 
         while (queue.Count > 0)
         {
+            if (++expanded > SAFETY_LIMIT) break;
+
             var current = queue.Dequeue();
             if (current.gemsCollected >= gemTarget)
             {
@@ -205,7 +207,7 @@ public class NumMatchSolverEditor : EditorWindow
                 if (v1 == 5) next.gemsCollected++;
                 if (v2 == 5 && (move.r1 != move.r2 || move.c1 != move.c2)) next.gemsCollected++;
 
-                var f = next.movesUsed + (gemTarget - next.gemsCollected) * 10;
+                var f = next.movesUsed + (gemTarget - next.gemsCollected);
                 queue.Enqueue(next, f);
             }
         }
