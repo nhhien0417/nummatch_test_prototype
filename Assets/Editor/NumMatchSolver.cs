@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -119,71 +120,60 @@ public class NumMatchSolverEditor : EditorWindow
         var cols = original.GetLength(1);
         var gemCount = CountGems(original);
         var gemTarget = gemCount / 2 * 2;
-        var beamWidth = 1000;
 
         var solutions = new HashSet<string>();
         var allValidSolutions = new List<State>();
-        var queue = new Queue<State>();
 
-        queue.Enqueue(new State { board = (int[,])original.Clone() });
+        var queue = new PriorityQueue<State>();
+        queue.Enqueue(new State { board = (int[,])original.Clone() }, 0);
 
         while (queue.Count > 0)
         {
-            var nextStates = new List<State>();
+            var current = queue.Dequeue();
 
-            while (queue.Count > 0)
+            if (current.gemsCollected >= gemTarget)
             {
-                var current = queue.Dequeue();
-                var allPairs = FindAllValidPairs(current.board);
-                var fivePositions = GetGemPositions(current.board);
-
-                var priorityPairs = allPairs.OrderByDescending(m =>
-                {
-                    var v1 = current.board[m.r1, m.c1];
-                    var v2 = current.board[m.r2, m.c2];
-
-                    var score = 0;
-                    if (v1 == 5 && v2 == 5) score += 100;
-
-                    var dist = Mathf.Min(GetDistanceToNearestFive(m.r1, m.c1, fivePositions),
-                                         GetDistanceToNearestFive(m.r2, m.c2, fivePositions));
-                    score -= dist;
-
-                    return score;
-                }).ToList();
-
-                foreach (var move in priorityPairs)
-                {
-                    var v1 = current.board[move.r1, move.c1];
-                    var v2 = current.board[move.r2, move.c2];
-                    var next = current.Clone();
-
-                    next.board[move.r1, move.c1] = 0;
-                    next.board[move.r2, move.c2] = 0;
-                    next.moves.Add(move);
-                    next.movesUsed++;
-
-                    if (v1 == 5) next.gemsCollected++;
-                    if (v2 == 5 && (move.r1 != move.r2 || move.c1 != move.c2)) next.gemsCollected++;
-
-                    if (next.gemsCollected >= gemTarget)
-                    {
-                        var solStr = string.Join("|", next.moves.Select(m => m.ToString()));
-                        if (solutions.Add(solStr))
-                            allValidSolutions.Add(next);
-
-                        continue;
-                    }
-
-                    nextStates.Add(next);
-                }
+                var solStr = string.Join("|", current.moves.Select(m => m.ToString()));
+                if (solutions.Add(solStr))
+                    allValidSolutions.Add(current);
+                if (solutions.Count >= 10) break;
+                continue;
             }
 
-            if (nextStates.Count == 0) break;
+            var allPairs = FindAllValidPairs(current.board);
+            var gemPositions = GetGemPositions(current.board);
 
-            foreach (var state in nextStates.OrderByDescending(s => s.gemsCollected).ThenBy(s => s.movesUsed).Take(beamWidth))
+            var prioritized = allPairs.OrderByDescending(m =>
             {
-                queue.Enqueue(state);
+                var v1 = current.board[m.r1, m.c1];
+                var v2 = current.board[m.r2, m.c2];
+
+                var score = 0;
+                if (v1 == 5 && v2 == 5) score += 100;
+
+                var dist = Mathf.Min(GetDistanceToNearestFive(m.r1, m.c1, gemPositions),
+                                     GetDistanceToNearestFive(m.r2, m.c2, gemPositions));
+
+                score -= dist;
+                return score;
+            });
+
+            foreach (var move in prioritized)
+            {
+                var v1 = current.board[move.r1, move.c1];
+                var v2 = current.board[move.r2, move.c2];
+
+                var next = current.Clone();
+                next.board[move.r1, move.c1] = 0;
+                next.board[move.r2, move.c2] = 0;
+                next.moves.Add(move);
+                next.movesUsed++;
+
+                if (v1 == 5) next.gemsCollected++;
+                if (v2 == 5 && (move.r1 != move.r2 || move.c1 != move.c2)) next.gemsCollected++;
+
+                var f = next.movesUsed + (gemTarget - next.gemsCollected);
+                queue.Enqueue(next, f);
             }
         }
 
@@ -281,3 +271,33 @@ public class NumMatchSolverEditor : EditorWindow
     }
     #endregion
 }
+
+public class PriorityQueue<T>
+{
+    private SortedDictionary<int, Queue<T>> dict = new();
+    public int Count { get; private set; } = 0;
+
+    public void Enqueue(T item, int priority)
+    {
+        if (!dict.TryGetValue(priority, out var queue))
+        {
+            queue = new Queue<T>();
+            dict[priority] = queue;
+        }
+        queue.Enqueue(item);
+        Count++;
+    }
+
+    public T Dequeue()
+    {
+        if (dict.Count == 0) throw new InvalidOperationException("Queue is empty");
+
+        var first = dict.First();
+        var queue = first.Value;
+        var item = queue.Dequeue();
+        if (queue.Count == 0) dict.Remove(first.Key);
+        Count--;
+        return item;
+    }
+}
+
