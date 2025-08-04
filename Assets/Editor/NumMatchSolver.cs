@@ -1,241 +1,275 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Diagnostics;
 
-public class NumMatchSolver : EditorWindow
+public class NumMatchSolverEditor : EditorWindow
 {
-    private string input = "";
-    private const int COLS = 9;
+    private class Move
+    {
+        public int r1, c1, r2, c2;
 
+        public override string ToString()
+        {
+            if (r1 < r2 || (r1 == r2 && c1 <= c2))
+                return $"{r1},{c1},{r2},{c2}";
+            else
+                return $"{r2},{c2},{r1},{c1}";
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is not Move other) return false;
+            return (r1 == other.r1 && c1 == other.c1 && r2 == other.r2 && c2 == other.c2)
+                || (r1 == other.r2 && c1 == other.c2 && r2 == other.r1 && c2 == other.c1);
+        }
+
+        public override int GetHashCode()
+        {
+            var a = Math.Min(r1 * 9 + c1, r2 * 9 + c2);
+            var b = Math.Max(r1 * 9 + c1, r2 * 9 + c2);
+            return HashCode.Combine(a, b);
+        }
+    }
+
+    private class State
+    {
+        public int[,] board;
+        public List<Move> moves = new();
+        public int gemsCollected;
+        public int movesUsed;
+
+        public State Clone()
+        {
+            return new State
+            {
+                board = (int[,])board.Clone(),
+                moves = new List<Move>(moves),
+                gemsCollected = gemsCollected,
+                movesUsed = movesUsed
+            };
+        }
+    }
+
+    private const int Cols = 9;
+    private string input = "";
+    private string output = "";
+    private Vector2 scroll;
+
+    #region UI
     [MenuItem("Tools/NumMatch Solver")]
     public static void ShowWindow()
     {
-        GetWindow<NumMatchSolver>("NumMatch Solver");
+        GetWindow<NumMatchSolverEditor>("NumMatch Solver");
     }
 
-    void OnGUI()
+    private void OnGUI()
     {
-        GUILayout.Label("Input (digits only):", EditorStyles.boldLabel);
-        input = EditorGUILayout.TextArea(input, GUILayout.Height(100));
+        GUIStyle inputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 14 };
+        GUIStyle outputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 12 };
 
-        if (GUILayout.Button("Solve"))
+        EditorGUILayout.LabelField("🧮 NumMatch Special Solver", EditorStyles.boldLabel);
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Enter digits (1-9):");
+
+        scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(100));
+        input = EditorGUILayout.TextArea(input, inputStyle, GUILayout.ExpandHeight(true));
+        EditorGUILayout.EndScrollView();
+
+        if (GUILayout.Button("Solve & Export"))
         {
-            Solve(input);
-        }
-    }
+            input = input.Trim();
 
-    void Solve(string input)
-    {
-        var stopwatch = Stopwatch.StartNew();
-
-        var rows = Mathf.CeilToInt(input.Length / (float)COLS);
-        var board = new Cell[rows, COLS];
-        var gems = new List<Cell>();
-
-        for (var i = 0; i < input.Length; i++)
-        {
-            var val = input[i] - '0';
-            var row = i / COLS;
-            var col = i % COLS;
-
-            var cell = new Cell(val, row, col, i);
-            board[row, col] = cell;
-            if (val == 5) gems.Add(cell);
-        }
-
-        var totalGems = gems.Count;
-        var requiredGems = totalGems % 2 == 0 ? totalGems : totalGems - 1;
-
-        var solutions = new List<List<Match>>();
-        var visited = new HashSet<string>();
-        var queue = new PriorityQueue<State>();
-
-        queue.Enqueue(new State(CloneBoard(board), gems, new List<Match>(), 0), 0);
-
-        while (queue.Count > 0 && solutions.Count < 10)
-        {
-            var (state, _) = queue.Dequeue();
-
-            if (state.Gems.Count(g => !g.Active) >= requiredGems)
+            if (ValidateInput(input))
             {
-                solutions.Add(state.Matches);
-                continue;
+                SolveAndExport(input);
             }
-
-            foreach (var m in GetAllValidMatches(state.Board))
+            else
             {
-                var hash = HashState(state.Matches, m);
-                if (visited.Contains(hash)) continue;
-                visited.Add(hash);
-
-                var newBoard = CloneBoard(state.Board);
-                newBoard[m.A.Row, m.A.Col].Active = false;
-                newBoard[m.B.Row, m.B.Col].Active = false;
-
-                var nextMatches = new List<Match>(state.Matches) { m };
-                var nextGems = state.Gems.Select(g => newBoard[g.Row, g.Col]).ToList();
-
-                queue.Enqueue(new State(newBoard, nextGems, nextMatches, state.MoveCount + 1), nextMatches.Count);
+                Debug.LogWarning("Invalid input: Only digits 1-9 allowed, at least 1 digit.");
             }
         }
 
-        SaveToFile(solutions);
-        stopwatch.Stop();
-        UnityEngine.Debug.Log($"✅ Done in {stopwatch.ElapsedMilliseconds}ms. Saved to output.txt");
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Top 10 Solutions:");
+        EditorGUILayout.TextArea(output, outputStyle, GUILayout.Height(400));
     }
 
-    string HashState(List<Match> current, Match next)
+    private bool ValidateInput(string digits) => digits.All(c => c is >= '1' and <= '9') && digits.Length >= 1;
+
+    private void SolveAndExport(string digits)
     {
-        return string.Join("|", current.Select(m => m.ToString())) + "|" + next.ToString();
+        var rows = Mathf.CeilToInt(digits.Length / 9f);
+        var board = new int[rows, Cols];
+
+        for (var i = 0; i < digits.Length; i++)
+            board[i / Cols, i % Cols] = digits[i] - '0';
+
+        var solutions = SolveBoard(board);
+        var path = Path.Combine(Application.dataPath, "Resources/output.txt");
+
+        File.WriteAllLines(path, solutions);
+        Debug.Log($"✅ Saved to: {path}");
+
+        output = string.Join("\n", solutions.Select((s, i) => $"{i + 1}. {s}"));
     }
+    #endregion
 
-    List<Match> GetAllValidMatches(Cell[,] board)
+    #region Logic
+    private List<string> SolveBoard(int[,] original)
     {
-        var result = new List<Match>();
-        var rows = board.GetLength(0);
-        var cols = board.GetLength(1);
+        var rows = original.GetLength(0);
+        var cols = original.GetLength(1);
+        var gemCount = CountGems(original);
+        var gemTarget = gemCount / 2 * 2;
+        var beamWidth = 30;
 
-        var directions = new (int dr, int dc)[] {
-            (0,1), (1,0), (1,1), (1,-1),
-            (0,-1), (-1,0), (-1,-1), (-1,1)
-        };
+        var uniqueSolutions = new HashSet<string>();
+        var result = new List<string>();
+        var queue = new Queue<State>();
 
-        for (var r = 0; r < rows; r++)
+        queue.Enqueue(new State { board = (int[,])original.Clone() });
+
+        while (queue.Count > 0 && result.Count < 10)
         {
-            for (var c = 0; c < cols; c++)
-            {
-                var a = board[r, c];
-                if (a == null || !a.Active) continue;
+            var nextStates = new List<State>();
 
-                foreach (var (dr, dc) in directions)
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                var pairs = FindAllValidPairs(current.board);
+
+                foreach (var move in pairs)
                 {
-                    var nr = r + dr;
-                    var nc = c + dc;
+                    var v1 = current.board[move.r1, move.c1];
+                    var v2 = current.board[move.r2, move.c2];
+                    var next = current.Clone();
 
-                    if (!IsInBounds(board, nr, nc)) continue;
-                    var b = board[nr, nc];
+                    next.board[move.r1, move.c1] = 0;
+                    next.board[move.r2, move.c2] = 0;
+                    next.moves.Add(move);
+                    next.movesUsed++;
 
-                    if (b == null || !b.Active || b.Index <= a.Index) continue;
-                    if ((a.Value + b.Value == 10 || a.Value == b.Value) && IsClearPath(a, b, board))
+                    if (v1 == 5) next.gemsCollected++;
+                    if (v2 == 5 && (move.r1 != move.r2 || move.c1 != move.c2)) next.gemsCollected++;
+
+                    // Dừng ngay khi đủ
+                    if (next.gemsCollected >= gemTarget)
                     {
-                        result.Add(new Match(a, b));
+                        var sol = string.Join("|", next.moves.Select(m => m.ToString()));
+
+                        if (uniqueSolutions.Add(sol)) result.Add(sol);
+                        if (result.Count >= 10) break;
+
+                        continue;
                     }
+
+                    nextStates.Add(next);
                 }
+            }
+
+            queue.Clear();
+            foreach (var state in nextStates.OrderByDescending(s => s.gemsCollected).ThenBy(s => s.movesUsed).Take(beamWidth))
+            {
+                queue.Enqueue(state);
             }
         }
 
         return result;
     }
 
-    bool IsClearPath(Cell a, Cell b, Cell[,] board)
+    private List<Move> FindAllValidPairs(int[,] board)
     {
-        var dr = b.Row - a.Row;
-        var dc = b.Col - a.Col;
+        var rows = board.GetLength(0);
+        var cols = board.GetLength(1);
+        var valid = new List<Move>();
 
-        var steps = Mathf.Max(Mathf.Abs(dr), Mathf.Abs(dc));
-        if (steps <= 1) return true;
+        int[] dr = { 0, 1, 1, 1 };
+        int[] dc = { 1, 0, 1, -1 };
 
-        dr = dr != 0 ? dr / Mathf.Abs(dr) : 0;
-        dc = dc != 0 ? dc / Mathf.Abs(dc) : 0;
-
-        var r = a.Row + dr;
-        var c = a.Col + dc;
-
-        while (r != b.Row || c != b.Col)
+        for (var r1 = 0; r1 < rows; r1++)
         {
-            if (!IsInBounds(board, r, c)) return false;
-            if (board[r, c] != null && board[r, c].Active) return false;
+            for (var c1 = 0; c1 < cols; c1++)
+            {
+                var v1 = board[r1, c1];
+                if (v1 == 0) continue;
+
+                // Duyệt theo 4 hướng xa
+                for (var dir = 0; dir < 4; dir++)
+                {
+                    for (var d = 1; d < Math.Max(rows, cols); d++)
+                    {
+                        var r2 = r1 + dr[dir] * d;
+                        var c2 = c1 + dc[dir] * d;
+                        if (r2 < 0 || r2 >= rows || c2 < 0 || c2 >= cols) break;
+
+                        var v2 = board[r2, c2];
+                        if (v2 == 0) continue;
+
+                        if ((v1 == v2 || v1 + v2 == 10) && !IsBlocked(board, r1, c1, r2, c2))
+                        {
+                            valid.Add(new Move { r1 = r1, c1 = c1, r2 = r2, c2 = c2 });
+                        }
+
+                        break;
+                    }
+                }
+
+                // Liền kề 8 hướng
+                for (var dr2 = -1; dr2 <= 1; dr2++)
+                {
+                    for (var dc2 = -1; dc2 <= 1; dc2++)
+                    {
+                        if (dr2 == 0 && dc2 == 0) continue;
+
+                        var nr = r1 + dr2;
+                        var nc = c1 + dc2;
+                        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+
+                        var v2 = board[nr, nc];
+                        if (v2 == 0) continue;
+
+                        if (v1 + v2 == 10 || v1 == v2)
+                        {
+                            valid.Add(new Move { r1 = r1, c1 = c1, r2 = nr, c2 = nc });
+                        }
+                    }
+                }
+            }
+        }
+
+        return valid;
+    }
+
+    private bool IsBlocked(int[,] board, int r1, int c1, int r2, int c2)
+    {
+        var dr = Math.Sign(r2 - r1);
+        var dc = Math.Sign(c2 - c1);
+
+        var r = r1 + dr;
+        var c = c1 + dc;
+
+        while (r != r2 || c != c2)
+        {
+            if (board[r, c] != 0) return true;
 
             r += dr;
             c += dc;
         }
 
-        return true;
+        return false;
     }
 
-    bool IsInBounds(Cell[,] board, int r, int c) =>
-        r >= 0 && c >= 0 && r < board.GetLength(0) && c < board.GetLength(1);
-
-    Cell[,] CloneBoard(Cell[,] board)
+    private int CountGems(int[,] board)
     {
-        var rows = board.GetLength(0);
-        var cols = board.GetLength(1);
-        var clone = new Cell[rows, cols];
+        var count = 0;
 
-        for (var r = 0; r < rows; r++)
-        {
-            for (var c = 0; c < cols; c++)
-            {
-                var cell = board[r, c];
-                if (cell != null)
-                    clone[r, c] = new Cell(cell.Value, cell.Row, cell.Col, cell.Index) { Active = cell.Active };
-            }
-        }
+        foreach (var v in board)
+            if (v == 5) count++;
 
-        return clone;
+        return count;
     }
-
-    void SaveToFile(List<List<Match>> solutions)
-    {
-        using StreamWriter writer = new("Assets/Resources/output.txt");
-        foreach (var sol in solutions.OrderBy(s => s.Count))
-        {
-            writer.WriteLine(string.Join("|", sol.Select(m => m.ToString())));
-        }
-        AssetDatabase.Refresh();
-    }
-
-    class Cell
-    {
-        public int Value;
-        public int Row, Col, Index;
-        public bool Active = true;
-
-        public Cell(int v, int r, int c, int i)
-        {
-            Value = v; Row = r; Col = c; Index = i;
-        }
-    }
-
-    class Match
-    {
-        public Cell A, B;
-        public Match(Cell a, Cell b) { A = a; B = b; }
-        public override string ToString() => $"{A.Row},{A.Col},{B.Row},{B.Col}";
-    }
-
-    class State
-    {
-        public Cell[,] Board;
-        public List<Cell> Gems;
-        public List<Match> Matches;
-        public int MoveCount;
-
-        public State(Cell[,] b, List<Cell> g, List<Match> m, int move)
-        {
-            Board = b; Gems = g; Matches = m; MoveCount = move;
-        }
-    }
-
-    class PriorityQueue<T>
-    {
-        private List<(T item, int priority)> elements = new();
-        public int Count => elements.Count;
-
-        public void Enqueue(T item, int priority)
-        {
-            elements.Add((item, priority));
-            elements.Sort((a, b) => a.priority.CompareTo(b.priority));
-        }
-
-        public (T, int) Dequeue()
-        {
-            var first = elements[0];
-            elements.RemoveAt(0);
-            return first;
-        }
-    }
+    #endregion
 }
