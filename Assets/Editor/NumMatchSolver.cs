@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -133,16 +132,16 @@ public class NumMatchSolverEditor : EditorWindow
         var beamWidth = 30;
 
         var solutions = new HashSet<string>();
-        var result = new List<string>();
+        var allValidSolutions = new List<State>();
         var queue = new Queue<State>();
 
         queue.Enqueue(new State { board = (int[,])original.Clone() });
 
-        while (queue.Count > 0 && result.Count < 10)
+        while (queue.Count > 0)
         {
             var nextStates = new List<State>();
 
-            while (queue.Count > 0 && result.Count < 10)
+            while (queue.Count > 0)
             {
                 var current = queue.Dequeue();
                 var pairs = FindAllValidPairs(current.board);
@@ -163,31 +162,28 @@ public class NumMatchSolverEditor : EditorWindow
 
                     if (next.gemsCollected >= gemTarget)
                     {
-                        var sol = string.Join("|", next.moves.Select(m => m.ToString()));
-
-                        if (solutions.Add(sol))
-                        {
-                            result.Add(sol);
-                            if (result.Count >= 10) break;
-                        }
-
-                        continue;
+                        var solStr = string.Join("|", next.moves.Select(m => m.ToString()));
+                        if (solutions.Add(solStr))
+                            allValidSolutions.Add(next);
                     }
 
                     nextStates.Add(next);
                 }
             }
 
-            if (result.Count >= 10) break;
+            if (nextStates.Count == 0)
+                break;
 
-            queue.Clear();
             foreach (var state in nextStates.OrderByDescending(s => s.gemsCollected).ThenBy(s => s.movesUsed).Take(beamWidth))
             {
                 queue.Enqueue(state);
             }
         }
 
-        return result;
+        var topSolutions = allValidSolutions.OrderBy(s => s.movesUsed).Take(10)
+                                            .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
+
+        return topSolutions;
     }
 
     private List<Move> FindAllValidPairs(int[,] board)
