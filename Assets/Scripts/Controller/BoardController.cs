@@ -71,15 +71,15 @@ public class BoardController : Singleton<BoardController>
         var attempt = 0;
         var matchPairs = GameManager.Instance.CurrentStage switch
         {
-            1 => 15,
-            2 => 10,
-            _ => 5
+            1 => 3,
+            2 => 2,
+            _ => 1
         };
 
         while (!TryGenerateBoard(matchPairs)) attempt++;
 
         SpawnCells();
-        PrintInitMatchPairs();
+        // PrintInitMatchPairs();
 
         Board.Instance.UpdateContainerHeight();
         Debug.Log($"✅ Generated after {attempt} attempts");

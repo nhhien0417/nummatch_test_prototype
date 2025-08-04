@@ -33,7 +33,7 @@ public class GemManager : SingletonPersistent<GemManager>
 
         foreach (var type in gemTypes.OrderBy(_ => Random.value).Take(countToPick))
         {
-            _gemProgresses.Add(new GemProgress(type, Random.Range(1, 4)));
+            _gemProgresses.Add(new GemProgress(type, Random.Range(3, 5)));
         }
     }
 
