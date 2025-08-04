@@ -29,9 +29,13 @@ public class NumMatchSolverEditor : EditorWindow
 
         public State Clone()
         {
+            var rows = board.GetLength(0);
+            var cols = board.GetLength(1);
+            var newBoard = new int[rows, cols];
+            Array.Copy(board, newBoard, board.Length);
             return new State
             {
-                board = (int[,])board.Clone(),
+                board = newBoard,
                 moves = new List<Move>(moves),
                 gemsCollected = gemsCollected,
                 movesUsed = movesUsed
@@ -47,19 +51,13 @@ public class NumMatchSolverEditor : EditorWindow
         public void Enqueue(T item, int priority)
         {
             if (!dict.TryGetValue(priority, out var queue))
-            {
-                queue = new Queue<T>();
-                dict[priority] = queue;
-            }
-
+                dict[priority] = queue = new Queue<T>();
             queue.Enqueue(item);
             Count++;
         }
 
         public T Dequeue()
         {
-            if (dict.Count == 0) throw new InvalidOperationException("Queue is empty");
-
             var first = dict.First();
             var queue = first.Value;
             var item = queue.Dequeue();
@@ -73,6 +71,7 @@ public class NumMatchSolverEditor : EditorWindow
 
     private const int SAFETY_LIMIT = 100000;
     private const int COLS = 9;
+    private const int TOPK = 30;
 
     private string _inputText = "";
     private string _outputText = "";
@@ -151,8 +150,7 @@ public class NumMatchSolverEditor : EditorWindow
     {
         var rows = original.GetLength(0);
         var cols = original.GetLength(1);
-        var gemCount = CountGems(original);
-        var gemTarget = gemCount / 2 * 2;
+        var gemTarget = CountGems(original) / 2 * 2;
         var expanded = 0;
 
         var solutions = new HashSet<string>();
@@ -178,20 +176,22 @@ public class NumMatchSolverEditor : EditorWindow
             var allPairs = FindAllValidPairs(current.board);
             var gemPositions = GetGemPositions(current.board);
 
-            var prioritized = allPairs.OrderByDescending(m =>
+            var prioritized = allPairs.Select(move =>
             {
-                var v1 = current.board[m.r1, m.c1];
-                var v2 = current.board[m.r2, m.c2];
+                var v1 = current.board[move.r1, move.c1];
+                var v2 = current.board[move.r2, move.c2];
 
                 var score = 0;
                 if (v1 == 5 && v2 == 5) score += 100;
 
-                var dist = Mathf.Min(GetDistanceToNearestFive(m.r1, m.c1, gemPositions),
-                                     GetDistanceToNearestFive(m.r2, m.c2, gemPositions));
-
+                var delta = Math.Abs(move.r1 - move.r2) + Math.Abs(move.c1 - move.c2);
+                var dist = Mathf.Min(GetDistanceToNearestFive(move.r1, move.c1, gemPositions),
+                                    GetDistanceToNearestFive(move.r2, move.c2, gemPositions));
                 score -= dist;
-                return score;
-            });
+                score -= delta;
+
+                return (move, score);
+            }).OrderByDescending(x => x.score).Take(TOPK).Select(x => x.move);
 
             foreach (var move in prioritized)
             {
@@ -212,8 +212,14 @@ public class NumMatchSolverEditor : EditorWindow
             }
         }
 
-        return allValidSolutions.OrderBy(s => s.movesUsed).Take(10)
-                                .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
+        if (allValidSolutions.Count == 0) return new();
+
+        var minMoves = allValidSolutions.Min(s => s.movesUsed);
+        return allValidSolutions.Where(s => s.movesUsed == minMoves)
+                                .OrderBy(_ => Guid.NewGuid())
+                                .Take(10)
+                                .Select(s => string.Join("|", s.moves.Select(m => m.ToString())))
+                                .ToList();
     }
 
     private List<Move> FindAllValidPairs(int[,] board)
