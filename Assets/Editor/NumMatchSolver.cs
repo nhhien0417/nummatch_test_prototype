@@ -1,3 +1,6 @@
+// NumMatchSolverOptimized.cs
+// Unity Editor tool: Solves NumMatch board using gem-priority strategy with special rules
+
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
@@ -5,14 +8,15 @@ using System.Linq;
 using System.IO;
 using System.Diagnostics;
 
-public class NumMatchSolverEditor : EditorWindow
+public class NumMatchSolverOptimized : EditorWindow
 {
     private string input = "";
+    private const int COLS = 9;
 
     [MenuItem("Tools/NumMatch Solver Optimized")]
     public static void ShowWindow()
     {
-        GetWindow<NumMatchSolverEditor>("NumMatch Solver Optimized");
+        GetWindow<NumMatchSolverOptimized>("NumMatch Solver Optimized");
     }
 
     void OnGUI()
@@ -28,129 +32,99 @@ public class NumMatchSolverEditor : EditorWindow
 
     void Solve(string input)
     {
-        var COLS = 9;
         var stopwatch = Stopwatch.StartNew();
 
         var rows = Mathf.CeilToInt(input.Length / (float)COLS);
         var board = new Cell[rows, COLS];
-        var cells = new List<Cell>();
-        var gemCount = 0;
+        var gems = new List<Cell>();
 
-        for (int i = 0; i < input.Length; i++)
+        for (var i = 0; i < input.Length; i++)
         {
-            int val = input[i] - '0';
-            int row = i / COLS;
-            int col = i % COLS;
+            var val = input[i] - '0';
+            var row = i / COLS;
+            var col = i % COLS;
 
-            var cell = new Cell
-            {
-                Value = val,
-                Row = row,
-                Col = col,
-                Index = i,
-                Active = true,
-                IsGem = val == 5
-            };
-
+            var cell = new Cell(val, row, col, i);
             board[row, col] = cell;
-            cells.Add(cell);
-            if (cell.IsGem) gemCount++;
+            if (val == 5) gems.Add(cell);
         }
 
-        var topSolutions = SolveGemFirst(board, gemCount, beamWidth: 100);
-        SaveToFile(topSolutions);
+        int totalGems = gems.Count;
+        int requiredGems = totalGems % 2 == 0 ? totalGems : totalGems - 1;
 
+        var solutions = new List<List<Match>>();
+        var visited = new HashSet<string>();
+        var queue = new PriorityQueue<State>();
+
+        queue.Enqueue(new State(CloneBoard(board), gems, new List<Match>(), 0), 0);
+
+        while (queue.Count > 0 && solutions.Count < 10)
+        {
+            var (state, _) = queue.Dequeue();
+
+            if (state.Gems.Count(g => !g.Active) >= requiredGems)
+            {
+                solutions.Add(state.Matches);
+                continue;
+            }
+
+            foreach (var m in GetAllValidMatches(state.Board))
+            {
+                var hash = HashState(state.Matches, m);
+                if (visited.Contains(hash)) continue;
+                visited.Add(hash);
+
+                var newBoard = CloneBoard(state.Board);
+                newBoard[m.A.Row, m.A.Col].Active = false;
+                newBoard[m.B.Row, m.B.Col].Active = false;
+
+                var nextMatches = new List<Match>(state.Matches) { m };
+                var nextGems = state.Gems.Select(g => newBoard[g.Row, g.Col]).ToList();
+
+                queue.Enqueue(new State(newBoard, nextGems, nextMatches, state.MoveCount + 1), nextMatches.Count);
+            }
+        }
+
+        SaveToFile(solutions);
         stopwatch.Stop();
         UnityEngine.Debug.Log($"✅ Done in {stopwatch.ElapsedMilliseconds}ms. Saved to output.txt");
     }
 
-    List<List<Match>> SolveGemFirst(Cell[,] board, int totalGem, int beamWidth)
+    string HashState(List<Match> current, Match next)
     {
-        var allMatches = GetAllValidMatches(board);
-        var initial = new State { Matches = new(), Used = new(), CollectedGem = 0, Board = CloneBoard(board) };
-
-        var queue = new List<State> { initial };
-        var solutions = new List<State>();
-
-        while (queue.Count > 0)
-        {
-            var nextQueue = new List<State>();
-
-            foreach (var state in queue)
-            {
-                var validMatches = GetAllValidMatches(state.Board)
-                    .Where(m => !state.Used.Contains(m.A.Index) && !state.Used.Contains(m.B.Index))
-                    .ToList();
-
-                foreach (var m in validMatches)
-                {
-                    var newState = new State
-                    {
-                        Matches = new List<Match>(state.Matches),
-                        Used = new HashSet<int>(state.Used),
-                        CollectedGem = state.CollectedGem,
-                        Board = CloneBoard(state.Board)
-                    };
-
-                    newState.Matches.Add(m);
-                    newState.Used.Add(m.A.Index);
-                    newState.Used.Add(m.B.Index);
-                    newState.CollectedGem += (m.A.IsGem ? 1 : 0) + (m.B.IsGem ? 1 : 0);
-                    newState.Board[m.A.Row, m.A.Col].Active = false;
-                    newState.Board[m.B.Row, m.B.Col].Active = false;
-
-                    nextQueue.Add(newState);
-                }
-            }
-
-            queue = nextQueue
-                .OrderByDescending(s => s.CollectedGem)
-                .ThenBy(s => GetBlockedGems(s.Board, s))
-                .ThenBy(s => s.Matches.Count)
-                .Take(beamWidth)
-                .ToList();
-
-            solutions.AddRange(queue.Where(s => s.CollectedGem >= totalGem));
-        }
-
-        return solutions
-            .OrderByDescending(s => s.CollectedGem)
-            .ThenBy(s => GetBlockedGems(s.Board, s))
-            .ThenBy(s => s.Matches.Count)
-            .Take(10)
-            .Select(s => s.Matches)
-            .ToList();
+        return string.Join("|", current.Select(m => m.ToString())) + "|" + next.ToString();
     }
 
-    static List<Match> GetAllValidMatches(Cell[,] board)
+    List<Match> GetAllValidMatches(Cell[,] board)
     {
         var result = new List<Match>();
-        int rows = board.GetLength(0);
-        int cols = board.GetLength(1);
-        var directions = new (int dr, int dc)[]
-        {
-            (0,1), (1,0), (1,1), (1,-1), (0,-1), (-1,0), (-1,-1), (-1,1)
+        var rows = board.GetLength(0);
+        var cols = board.GetLength(1);
+
+        var directions = new (int dr, int dc)[] {
+            (0,1), (1,0), (1,1), (1,-1),
+            (0,-1), (-1,0), (-1,-1), (-1,1)
         };
 
-        for (int r = 0; r < rows; r++)
+        for (var r = 0; r < rows; r++)
         {
-            for (int c = 0; c < cols; c++)
+            for (var c = 0; c < cols; c++)
             {
                 var a = board[r, c];
                 if (a == null || !a.Active) continue;
 
                 foreach (var (dr, dc) in directions)
                 {
-                    int nr = r + dr;
-                    int nc = c + dc;
+                    var nr = r + dr;
+                    var nc = c + dc;
+
                     if (!IsInBounds(board, nr, nc)) continue;
-
                     var b = board[nr, nc];
-                    if (b == null || !b.Active || b.Index <= a.Index) continue;
 
+                    if (b == null || !b.Active || b.Index <= a.Index) continue;
                     if ((a.Value + b.Value == 10 || a.Value == b.Value) && IsClearPath(a, b, board))
                     {
-                        result.Add(new Match { A = a, B = b });
+                        result.Add(new Match(a, b));
                     }
                 }
             }
@@ -159,108 +133,57 @@ public class NumMatchSolverEditor : EditorWindow
         return result;
     }
 
-    static bool IsInBounds(Cell[,] board, int r, int c) =>
-        r >= 0 && c >= 0 && r < board.GetLength(0) && c < board.GetLength(1);
-
-    static bool IsClearPath(Cell a, Cell b, Cell[,] board)
+    bool IsClearPath(Cell a, Cell b, Cell[,] board)
     {
-        int dr = b.Row - a.Row;
-        int dc = b.Col - a.Col;
-        int steps = Mathf.Max(Mathf.Abs(dr), Mathf.Abs(dc));
+        var dr = b.Row - a.Row;
+        var dc = b.Col - a.Col;
+
+        var steps = Mathf.Max(Mathf.Abs(dr), Mathf.Abs(dc));
         if (steps <= 1) return true;
 
         dr = dr != 0 ? dr / Mathf.Abs(dr) : 0;
         dc = dc != 0 ? dc / Mathf.Abs(dc) : 0;
-        int r = a.Row + dr;
-        int c = a.Col + dc;
+
+        var r = a.Row + dr;
+        var c = a.Col + dc;
 
         while (r != b.Row || c != b.Col)
         {
             if (!IsInBounds(board, r, c)) return false;
-            if (board[r, c] != null && board[r, c].Active)
-                return false;
+            if (board[r, c] != null && board[r, c].Active) return false;
+
             r += dr;
             c += dc;
         }
+
         return true;
     }
 
-    static int GetBlockedGems(Cell[,] board, State state)
+    bool IsInBounds(Cell[,] board, int r, int c) =>
+        r >= 0 && c >= 0 && r < board.GetLength(0) && c < board.GetLength(1);
+
+    Cell[,] CloneBoard(Cell[,] board)
     {
-        int count = 0;
-        int rows = board.GetLength(0);
-        int cols = board.GetLength(1);
-
-        for (int r = 0; r < rows; r++)
-        {
-            for (int c = 0; c < cols; c++)
-            {
-                var cell = board[r, c];
-                if (cell == null || !cell.IsGem || !cell.Active || state.Used.Contains(cell.Index))
-                    continue;
-
-                bool hasNeighbor = false;
-
-                for (int dr = -1; dr <= 1; dr++)
-                {
-                    for (int dc = -1; dc <= 1; dc++)
-                    {
-                        if (dr == 0 && dc == 0) continue;
-                        int nr = r + dr;
-                        int nc = c + dc;
-
-                        if (!IsInBounds(board, nr, nc)) continue;
-                        var neighbor = board[nr, nc];
-
-                        if (neighbor != null && neighbor.Active && !state.Used.Contains(neighbor.Index))
-                        {
-                            if ((cell.Value + neighbor.Value == 10 || cell.Value == neighbor.Value) && IsClearPath(cell, neighbor, board))
-                            {
-                                hasNeighbor = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (hasNeighbor) break;
-                }
-                if (!hasNeighbor) count++;
-            }
-        }
-        return count;
-    }
-
-    static Cell[,] CloneBoard(Cell[,] board)
-    {
-        int rows = board.GetLength(0);
-        int cols = board.GetLength(1);
+        var rows = board.GetLength(0);
+        var cols = board.GetLength(1);
         var clone = new Cell[rows, cols];
 
-        for (int r = 0; r < rows; r++)
+        for (var r = 0; r < rows; r++)
         {
-            for (int c = 0; c < cols; c++)
+            for (var c = 0; c < cols; c++)
             {
                 var cell = board[r, c];
                 if (cell != null)
-                {
-                    clone[r, c] = new Cell
-                    {
-                        Value = cell.Value,
-                        Row = cell.Row,
-                        Col = cell.Col,
-                        Index = cell.Index,
-                        Active = cell.Active,
-                        IsGem = cell.IsGem
-                    };
-                }
+                    clone[r, c] = new Cell(cell.Value, cell.Row, cell.Col, cell.Index) { Active = cell.Active };
             }
         }
         return clone;
     }
 
-    static void SaveToFile(List<List<Match>> solutions)
+    void SaveToFile(List<List<Match>> solutions)
     {
         using StreamWriter writer = new("Assets/Resources/output.txt");
-        foreach (var sol in solutions)
+        foreach (var sol in solutions.OrderBy(s => s.Count))
         {
             writer.WriteLine(string.Join("|", sol.Select(m => m.ToString())));
         }
@@ -271,21 +194,50 @@ public class NumMatchSolverEditor : EditorWindow
     {
         public int Value;
         public int Row, Col, Index;
-        public bool Active;
-        public bool IsGem;
+        public bool Active = true;
+
+        public Cell(int v, int r, int c, int i)
+        {
+            Value = v; Row = r; Col = c; Index = i;
+        }
     }
 
     class Match
     {
         public Cell A, B;
+        public Match(Cell a, Cell b) { A = a; B = b; }
         public override string ToString() => $"{A.Row},{A.Col},{B.Row},{B.Col}";
     }
 
     class State
     {
-        public List<Match> Matches = new();
-        public HashSet<int> Used = new();
-        public int CollectedGem = 0;
         public Cell[,] Board;
+        public List<Cell> Gems;
+        public List<Match> Matches;
+        public int MoveCount;
+
+        public State(Cell[,] b, List<Cell> g, List<Match> m, int move)
+        {
+            Board = b; Gems = g; Matches = m; MoveCount = move;
+        }
+    }
+
+    class PriorityQueue<T>
+    {
+        private List<(T item, int priority)> elements = new();
+        public int Count => elements.Count;
+
+        public void Enqueue(T item, int priority)
+        {
+            elements.Add((item, priority));
+            elements.Sort((a, b) => a.priority.CompareTo(b.priority));
+        }
+
+        public (T, int) Dequeue()
+        {
+            var first = elements[0];
+            elements.RemoveAt(0);
+            return first;
+        }
     }
 }
