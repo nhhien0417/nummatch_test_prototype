@@ -1,6 +1,3 @@
-// NumMatchSolverOptimized.cs
-// Unity Editor tool: Solves NumMatch board using gem-priority strategy with special rules
-
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
@@ -8,15 +5,15 @@ using System.Linq;
 using System.IO;
 using System.Diagnostics;
 
-public class NumMatchSolverOptimized : EditorWindow
+public class NumMatchSolver : EditorWindow
 {
     private string input = "";
     private const int COLS = 9;
 
-    [MenuItem("Tools/NumMatch Solver Optimized")]
+    [MenuItem("Tools/NumMatch Solver")]
     public static void ShowWindow()
     {
-        GetWindow<NumMatchSolverOptimized>("NumMatch Solver Optimized");
+        GetWindow<NumMatchSolver>("NumMatch Solver");
     }
 
     void OnGUI()
@@ -49,8 +46,8 @@ public class NumMatchSolverOptimized : EditorWindow
             if (val == 5) gems.Add(cell);
         }
 
-        int totalGems = gems.Count;
-        int requiredGems = totalGems % 2 == 0 ? totalGems : totalGems - 1;
+        var totalGems = gems.Count;
+        var requiredGems = totalGems % 2 == 0 ? totalGems : totalGems - 1;
 
         var solutions = new List<List<Match>>();
         var visited = new HashSet<string>();
@@ -177,6 +174,7 @@ public class NumMatchSolverOptimized : EditorWindow
                     clone[r, c] = new Cell(cell.Value, cell.Row, cell.Col, cell.Index) { Active = cell.Active };
             }
         }
+
         return clone;
     }
 
