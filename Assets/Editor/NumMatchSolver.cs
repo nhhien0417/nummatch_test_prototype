@@ -39,15 +39,47 @@ public class NumMatchSolverEditor : EditorWindow
         }
     }
 
-    private const int Cols = 9;
-    private string input = "";
-    private string output = "";
-    private Vector2 inputScroll;
-    private Vector2 outputScroll;
+    private class PriorityQueue<T>
+    {
+        private SortedDictionary<int, Queue<T>> dict = new();
+        public int Count { get; private set; } = 0;
 
-    private static readonly (int dr, int dc)[] Directions = new[] {
-        (0, 1), (1, 0), (1, 1), (1, -1)
-    };
+        public void Enqueue(T item, int priority)
+        {
+            if (!dict.TryGetValue(priority, out var queue))
+            {
+                queue = new Queue<T>();
+                dict[priority] = queue;
+            }
+
+            queue.Enqueue(item);
+            Count++;
+        }
+
+        public T Dequeue()
+        {
+            if (dict.Count == 0) throw new InvalidOperationException("Queue is empty");
+
+            var first = dict.First();
+            var queue = first.Value;
+            var item = queue.Dequeue();
+
+            if (queue.Count == 0) dict.Remove(first.Key);
+            Count--;
+
+            return item;
+        }
+    }
+
+    private const int COLS = 9;
+
+    private string _inputText = "";
+    private string _outputText = "";
+
+    private Vector2 _inputScroll;
+    private Vector2 _outputScroll;
+
+    private static readonly (int dr, int dc)[] Directions = new[] { (0, 1), (1, 0), (1, 1), (1, -1) };
 
     #region UI
     [MenuItem("Tools/NumMatch Solver")]
@@ -59,15 +91,15 @@ public class NumMatchSolverEditor : EditorWindow
         GUIStyle outputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 12 };
 
         EditorGUILayout.LabelField("Enter digits (1-9):");
-        inputScroll = EditorGUILayout.BeginScrollView(inputScroll, GUILayout.Height(125));
-        input = EditorGUILayout.TextArea(input, inputStyle, GUILayout.ExpandHeight(true));
+        _inputScroll = EditorGUILayout.BeginScrollView(_inputScroll, GUILayout.Height(125));
+        _inputText = EditorGUILayout.TextArea(_inputText, inputStyle, GUILayout.ExpandHeight(true));
         EditorGUILayout.EndScrollView();
 
         if (GUILayout.Button("Solve & Export"))
         {
-            input = input.Trim();
-            if (ValidateInput(input))
-                SolveAndExport(input);
+            _inputText = _inputText.Trim();
+            if (ValidateInput(_inputText))
+                SolveAndExport(_inputText);
             else
                 Debug.LogWarning("Invalid input: Only digits 1-9 allowed, at least 1 digit.");
         }
@@ -75,8 +107,8 @@ public class NumMatchSolverEditor : EditorWindow
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Top 10 Solutions:");
 
-        outputScroll = EditorGUILayout.BeginScrollView(outputScroll, GUILayout.Height(400));
-        output = EditorGUILayout.TextArea(output, outputStyle, GUILayout.ExpandHeight(true));
+        _outputScroll = EditorGUILayout.BeginScrollView(_outputScroll, GUILayout.Height(400));
+        _outputText = EditorGUILayout.TextArea(_outputText, outputStyle, GUILayout.ExpandHeight(true));
         EditorGUILayout.EndScrollView();
     }
 
@@ -85,10 +117,10 @@ public class NumMatchSolverEditor : EditorWindow
     private void SolveAndExport(string digits)
     {
         var rows = Mathf.CeilToInt(digits.Length / 9f);
-        var board = new int[rows, Cols];
+        var board = new int[rows, COLS];
 
         for (var i = 0; i < digits.Length; i++)
-            board[i / Cols, i % Cols] = digits[i] - '0';
+            board[i / COLS, i % COLS] = digits[i] - '0';
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var gemCount = CountGems(board);
@@ -104,8 +136,8 @@ public class NumMatchSolverEditor : EditorWindow
             return $"{i + 1}. ({moveCount} moves)\n{s}";
         });
 
-        output = $"Gems: {gemCount}\nTime: {stopwatch.ElapsedMilliseconds} ms\n\n" +
-                 string.Join("\n\n", formattedSolutions);
+        _outputText = $"Gems: {gemCount}\nTime: {stopwatch.ElapsedMilliseconds} ms\n\n" +
+                        string.Join("\n\n", formattedSolutions);
 
         Debug.Log($"Saved {solutions.Count} solutions to: {path}");
         Debug.Log($"Total gems on board: {gemCount}");
@@ -271,33 +303,3 @@ public class NumMatchSolverEditor : EditorWindow
     }
     #endregion
 }
-
-public class PriorityQueue<T>
-{
-    private SortedDictionary<int, Queue<T>> dict = new();
-    public int Count { get; private set; } = 0;
-
-    public void Enqueue(T item, int priority)
-    {
-        if (!dict.TryGetValue(priority, out var queue))
-        {
-            queue = new Queue<T>();
-            dict[priority] = queue;
-        }
-        queue.Enqueue(item);
-        Count++;
-    }
-
-    public T Dequeue()
-    {
-        if (dict.Count == 0) throw new InvalidOperationException("Queue is empty");
-
-        var first = dict.First();
-        var queue = first.Value;
-        var item = queue.Dequeue();
-        if (queue.Count == 0) dict.Remove(first.Key);
-        Count--;
-        return item;
-    }
-}
-
