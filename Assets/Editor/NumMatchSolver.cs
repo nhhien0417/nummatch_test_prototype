@@ -67,8 +67,16 @@ public class NumMatchSolverEditor : EditorWindow
 
     private void OnGUI()
     {
-        GUIStyle inputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 14 };
-        GUIStyle outputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 12 };
+        GUIStyle inputStyle = new(EditorStyles.textArea)
+        {
+            wordWrap = true,
+            fontSize = 14
+        };
+        GUIStyle outputStyle = new(EditorStyles.textArea)
+        {
+            wordWrap = true,
+            fontSize = 12
+        };
 
         EditorGUILayout.LabelField("🧮 NumMatch Special Solver", EditorStyles.boldLabel);
         EditorGUILayout.Space();
@@ -136,7 +144,7 @@ public class NumMatchSolverEditor : EditorWindow
         {
             var nextStates = new List<State>();
 
-            while (queue.Count > 0)
+            while (queue.Count > 0 && result.Count < 10)
             {
                 var current = queue.Dequeue();
                 var pairs = FindAllValidPairs(current.board);
@@ -155,13 +163,16 @@ public class NumMatchSolverEditor : EditorWindow
                     if (v1 == 5) next.gemsCollected++;
                     if (v2 == 5 && (move.r1 != move.r2 || move.c1 != move.c2)) next.gemsCollected++;
 
-                    // Dừng ngay khi đủ
                     if (next.gemsCollected >= gemTarget)
                     {
-                        var sol = string.Join("|", next.moves.Select(m => m.ToString()));
+                        var sol = string.Join("|", next.moves.OrderBy(m => m.r1).ThenBy(m => m.c1).ThenBy(m => m.r2)
+                                        .ThenBy(m => m.c2).Select(m => m.ToString()));
 
-                        if (uniqueSolutions.Add(sol)) result.Add(sol);
-                        if (result.Count >= 10) break;
+                        if (uniqueSolutions.Add(sol))
+                        {
+                            result.Add(sol);
+                            if (result.Count >= 10) break;
+                        }
 
                         continue;
                     }
@@ -169,6 +180,8 @@ public class NumMatchSolverEditor : EditorWindow
                     nextStates.Add(next);
                 }
             }
+
+            if (result.Count >= 10) break;
 
             queue.Clear();
             foreach (var state in nextStates.OrderByDescending(s => s.gemsCollected).ThenBy(s => s.movesUsed).Take(beamWidth))
@@ -184,7 +197,7 @@ public class NumMatchSolverEditor : EditorWindow
     {
         var rows = board.GetLength(0);
         var cols = board.GetLength(1);
-        var valid = new List<Move>();
+        var valid = new HashSet<Move>();
 
         int[] dr = { 0, 1, 1, 1 };
         int[] dc = { 1, 0, 1, -1 };
@@ -196,7 +209,6 @@ public class NumMatchSolverEditor : EditorWindow
                 var v1 = board[r1, c1];
                 if (v1 == 0) continue;
 
-                // Duyệt theo 4 hướng xa
                 for (var dir = 0; dir < 4; dir++)
                 {
                     for (var d = 1; d < Math.Max(rows, cols); d++)
@@ -209,17 +221,13 @@ public class NumMatchSolverEditor : EditorWindow
                         if (v2 == 0) continue;
 
                         if ((v1 == v2 || v1 + v2 == 10) && !IsBlocked(board, r1, c1, r2, c2))
-                        {
                             valid.Add(new Move { r1 = r1, c1 = c1, r2 = r2, c2 = c2 });
-                        }
 
                         break;
                     }
                 }
 
-                // Liền kề 8 hướng
                 for (var dr2 = -1; dr2 <= 1; dr2++)
-                {
                     for (var dc2 = -1; dc2 <= 1; dc2++)
                     {
                         if (dr2 == 0 && dc2 == 0) continue;
@@ -232,15 +240,12 @@ public class NumMatchSolverEditor : EditorWindow
                         if (v2 == 0) continue;
 
                         if (v1 + v2 == 10 || v1 == v2)
-                        {
                             valid.Add(new Move { r1 = r1, c1 = c1, r2 = nr, c2 = nc });
-                        }
                     }
-                }
             }
         }
 
-        return valid;
+        return valid.ToList();
     }
 
     private bool IsBlocked(int[,] board, int r1, int c1, int r2, int c2)
@@ -265,10 +270,8 @@ public class NumMatchSolverEditor : EditorWindow
     private int CountGems(int[,] board)
     {
         var count = 0;
-
         foreach (var v in board)
             if (v == 5) count++;
-
         return count;
     }
     #endregion
