@@ -44,31 +44,21 @@ public class NumMatchSolverEditor : EditorWindow
     private Vector2 inputScroll;
     private Vector2 outputScroll;
 
-    private static readonly (int dr, int dc)[] Directions = new[]
-    {
-        (0, 1),
-        (1, 0),
-        (1, 1),
-        (1, -1)
+    private static readonly (int dr, int dc)[] Directions = new[] {
+        (0, 1), (1, 0), (1, 1), (1, -1)
     };
 
     #region UI
     [MenuItem("Tools/NumMatch Solver")]
-    public static void ShowWindow()
-    {
-        GetWindow<NumMatchSolverEditor>("NumMatch Solver");
-    }
+    public static void ShowWindow() => GetWindow<NumMatchSolverEditor>("NumMatch Solver");
 
     private void OnGUI()
     {
         GUIStyle inputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 14 };
         GUIStyle outputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 12 };
 
-        EditorGUILayout.LabelField("🧮 NumMatch Special Solver", EditorStyles.boldLabel);
-        EditorGUILayout.Space();
         EditorGUILayout.LabelField("Enter digits (1-9):");
-
-        inputScroll = EditorGUILayout.BeginScrollView(inputScroll, GUILayout.Height(100));
+        inputScroll = EditorGUILayout.BeginScrollView(inputScroll, GUILayout.Height(125));
         input = EditorGUILayout.TextArea(input, inputStyle, GUILayout.ExpandHeight(true));
         EditorGUILayout.EndScrollView();
 
@@ -113,8 +103,8 @@ public class NumMatchSolverEditor : EditorWindow
             return $"{i + 1}. ({moveCount} moves)\n{s}";
         });
 
-        output = $"Gems: {gemCount}\nTime: {stopwatch.ElapsedMilliseconds} ms\n\n"
-               + string.Join("\n\n", formattedSolutions);
+        output = $"Gems: {gemCount}\nTime: {stopwatch.ElapsedMilliseconds} ms\n\n" +
+                 string.Join("\n\n", formattedSolutions);
 
         Debug.Log($"Saved {solutions.Count} solutions to: {path}");
         Debug.Log($"Total gems on board: {gemCount}");
@@ -129,7 +119,7 @@ public class NumMatchSolverEditor : EditorWindow
         var cols = original.GetLength(1);
         var gemCount = CountGems(original);
         var gemTarget = gemCount / 2 * 2;
-        var beamWidth = 30;
+        var beamWidth = 1000;
 
         var solutions = new HashSet<string>();
         var allValidSolutions = new List<State>();
@@ -144,9 +134,25 @@ public class NumMatchSolverEditor : EditorWindow
             while (queue.Count > 0)
             {
                 var current = queue.Dequeue();
-                var pairs = FindAllValidPairs(current.board);
+                var allPairs = FindAllValidPairs(current.board);
+                var fivePositions = GetGemPositions(current.board);
 
-                foreach (var move in pairs)
+                var priorityPairs = allPairs.OrderByDescending(m =>
+                {
+                    var v1 = current.board[m.r1, m.c1];
+                    var v2 = current.board[m.r2, m.c2];
+
+                    var score = 0;
+                    if (v1 == 5 && v2 == 5) score += 100;
+
+                    var dist = Mathf.Min(GetDistanceToNearestFive(m.r1, m.c1, fivePositions),
+                                         GetDistanceToNearestFive(m.r2, m.c2, fivePositions));
+                    score -= dist;
+
+                    return score;
+                }).ToList();
+
+                foreach (var move in priorityPairs)
                 {
                     var v1 = current.board[move.r1, move.c1];
                     var v2 = current.board[move.r2, move.c2];
@@ -165,14 +171,15 @@ public class NumMatchSolverEditor : EditorWindow
                         var solStr = string.Join("|", next.moves.Select(m => m.ToString()));
                         if (solutions.Add(solStr))
                             allValidSolutions.Add(next);
+
+                        continue;
                     }
 
                     nextStates.Add(next);
                 }
             }
 
-            if (nextStates.Count == 0)
-                break;
+            if (nextStates.Count == 0) break;
 
             foreach (var state in nextStates.OrderByDescending(s => s.gemsCollected).ThenBy(s => s.movesUsed).Take(beamWidth))
             {
@@ -180,10 +187,8 @@ public class NumMatchSolverEditor : EditorWindow
             }
         }
 
-        var topSolutions = allValidSolutions.OrderBy(s => s.movesUsed).Take(10)
-                                            .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
-
-        return topSolutions;
+        return allValidSolutions.OrderBy(s => s.movesUsed).Take(10)
+                                .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
     }
 
     private List<Move> FindAllValidPairs(int[,] board)
@@ -244,6 +249,27 @@ public class NumMatchSolverEditor : EditorWindow
         }
 
         return valid;
+    }
+
+    private List<(int r, int c)> GetGemPositions(int[,] board)
+    {
+        var list = new List<(int r, int c)>();
+        var rows = board.GetLength(0);
+        var cols = board.GetLength(1);
+
+        for (var r = 0; r < rows; r++)
+            for (var c = 0; c < cols; c++)
+                if (board[r, c] == 5)
+                    list.Add((r, c));
+        return list;
+    }
+
+    private int GetDistanceToNearestFive(int r, int c, List<(int r, int c)> gems)
+    {
+        var minDist = int.MaxValue;
+        foreach (var (gr, gc) in gems)
+            minDist = Mathf.Min(minDist, Mathf.Abs(gr - r) + Mathf.Abs(gc - c));
+        return minDist == int.MaxValue ? 99 : minDist;
     }
 
     private int CountGems(int[,] board)
