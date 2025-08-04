@@ -18,20 +18,6 @@ public class NumMatchSolverEditor : EditorWindow
             else
                 return $"{r2},{c2},{r1},{c1}";
         }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is not Move other) return false;
-            return (r1 == other.r1 && c1 == other.c1 && r2 == other.r2 && c2 == other.c2)
-                || (r1 == other.r2 && c1 == other.c2 && r2 == other.r1 && c2 == other.c1);
-        }
-
-        public override int GetHashCode()
-        {
-            var a = Math.Min(r1 * 9 + c1, r2 * 9 + c2);
-            var b = Math.Max(r1 * 9 + c1, r2 * 9 + c2);
-            return HashCode.Combine(a, b);
-        }
     }
 
     private class State
@@ -56,7 +42,8 @@ public class NumMatchSolverEditor : EditorWindow
     private const int Cols = 9;
     private string input = "";
     private string output = "";
-    private Vector2 scroll;
+    private Vector2 inputScroll;
+    private Vector2 outputScroll;
 
     #region UI
     [MenuItem("Tools/NumMatch Solver")]
@@ -67,42 +54,32 @@ public class NumMatchSolverEditor : EditorWindow
 
     private void OnGUI()
     {
-        GUIStyle inputStyle = new(EditorStyles.textArea)
-        {
-            wordWrap = true,
-            fontSize = 14
-        };
-        GUIStyle outputStyle = new(EditorStyles.textArea)
-        {
-            wordWrap = true,
-            fontSize = 12
-        };
+        GUIStyle inputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 14 };
+        GUIStyle outputStyle = new(EditorStyles.textArea) { wordWrap = true, fontSize = 12 };
 
         EditorGUILayout.LabelField("🧮 NumMatch Special Solver", EditorStyles.boldLabel);
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Enter digits (1-9):");
 
-        scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(100));
+        inputScroll = EditorGUILayout.BeginScrollView(inputScroll, GUILayout.Height(100));
         input = EditorGUILayout.TextArea(input, inputStyle, GUILayout.ExpandHeight(true));
         EditorGUILayout.EndScrollView();
 
         if (GUILayout.Button("Solve & Export"))
         {
             input = input.Trim();
-
             if (ValidateInput(input))
-            {
                 SolveAndExport(input);
-            }
             else
-            {
                 Debug.LogWarning("Invalid input: Only digits 1-9 allowed, at least 1 digit.");
-            }
         }
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Top 10 Solutions:");
-        EditorGUILayout.TextArea(output, outputStyle, GUILayout.Height(400));
+
+        outputScroll = EditorGUILayout.BeginScrollView(outputScroll, GUILayout.Height(400));
+        output = EditorGUILayout.TextArea(output, outputStyle, GUILayout.ExpandHeight(true));
+        EditorGUILayout.EndScrollView();
     }
 
     private bool ValidateInput(string digits) => digits.All(c => c is >= '1' and <= '9') && digits.Length >= 1;
@@ -115,13 +92,26 @@ public class NumMatchSolverEditor : EditorWindow
         for (var i = 0; i < digits.Length; i++)
             board[i / Cols, i % Cols] = digits[i] - '0';
 
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var gemCount = CountGems(board);
         var solutions = SolveBoard(board);
+        stopwatch.Stop();
+
         var path = Path.Combine(Application.dataPath, "Resources/output.txt");
-
         File.WriteAllLines(path, solutions);
-        Debug.Log($"✅ Saved to: {path}");
 
-        output = string.Join("\n", solutions.Select((s, i) => $"{i + 1}. {s}"));
+        var formattedSolutions = solutions.Select((s, i) =>
+        {
+            var moveCount = s.Split('|').Length;
+            return $"{i + 1}. ({moveCount} moves)\n{s}";
+        });
+
+        output = $"Gems: {gemCount}\nTime: {stopwatch.ElapsedMilliseconds} ms\n\n"
+               + string.Join("\n\n", formattedSolutions);
+
+        Debug.Log($"Saved {solutions.Count} solutions to: {path}");
+        Debug.Log($"Total gems on board: {gemCount}");
+        Debug.Log($"Solved in {stopwatch.ElapsedMilliseconds} ms");
     }
     #endregion
 
@@ -165,8 +155,7 @@ public class NumMatchSolverEditor : EditorWindow
 
                     if (next.gemsCollected >= gemTarget)
                     {
-                        var sol = string.Join("|", next.moves.OrderBy(m => m.r1).ThenBy(m => m.c1).ThenBy(m => m.r2)
-                                        .ThenBy(m => m.c2).Select(m => m.ToString()));
+                        var sol = string.Join("|", next.moves.Select(m => m.ToString()));
 
                         if (uniqueSolutions.Add(sol))
                         {
