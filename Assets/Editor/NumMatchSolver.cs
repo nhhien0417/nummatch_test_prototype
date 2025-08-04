@@ -169,7 +169,7 @@ public class NumMatchSolverEditor : EditorWindow
                 var solStr = string.Join("|", current.moves.Select(m => m.ToString()));
                 if (solutions.Add(solStr))
                     allValidSolutions.Add(current);
-                if (solutions.Count >= 10) break;
+                // if (solutions.Count >= 10) break;
                 continue;
             }
 
@@ -186,9 +186,8 @@ public class NumMatchSolverEditor : EditorWindow
 
                 var delta = Math.Abs(move.r1 - move.r2) + Math.Abs(move.c1 - move.c2);
                 var dist = Mathf.Min(GetDistanceToNearestFive(move.r1, move.c1, gemPositions),
-                                    GetDistanceToNearestFive(move.r2, move.c2, gemPositions));
-                score -= dist;
-                score -= delta;
+                                     GetDistanceToNearestFive(move.r2, move.c2, gemPositions));
+                score -= dist + delta;
 
                 return (move, score);
             }).OrderByDescending(x => x.score).Take(TOPK).Select(x => x.move);
@@ -215,11 +214,8 @@ public class NumMatchSolverEditor : EditorWindow
         if (allValidSolutions.Count == 0) return new();
 
         var minMoves = allValidSolutions.Min(s => s.movesUsed);
-        return allValidSolutions.Where(s => s.movesUsed == minMoves)
-                                .OrderBy(_ => Guid.NewGuid())
-                                .Take(10)
-                                .Select(s => string.Join("|", s.moves.Select(m => m.ToString())))
-                                .ToList();
+        return allValidSolutions.Where(s => s.movesUsed == minMoves).OrderBy(_ => Guid.NewGuid()).Take(10)
+                                .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
     }
 
     private List<Move> FindAllValidPairs(int[,] board)
