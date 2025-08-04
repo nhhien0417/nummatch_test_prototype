@@ -45,6 +45,14 @@ public class NumMatchSolverEditor : EditorWindow
     private Vector2 inputScroll;
     private Vector2 outputScroll;
 
+    private static readonly (int dr, int dc)[] Directions = new[]
+    {
+        (0, 1),
+        (1, 0),
+        (1, 1),
+        (1, -1)
+    };
+
     #region UI
     [MenuItem("Tools/NumMatch Solver")]
     public static void ShowWindow()
@@ -124,7 +132,7 @@ public class NumMatchSolverEditor : EditorWindow
         var gemTarget = gemCount / 2 * 2;
         var beamWidth = 30;
 
-        var uniqueSolutions = new HashSet<string>();
+        var solutions = new HashSet<string>();
         var result = new List<string>();
         var queue = new Queue<State>();
 
@@ -157,7 +165,7 @@ public class NumMatchSolverEditor : EditorWindow
                     {
                         var sol = string.Join("|", next.moves.Select(m => m.ToString()));
 
-                        if (uniqueSolutions.Add(sol))
+                        if (solutions.Add(sol))
                         {
                             result.Add(sol);
                             if (result.Count >= 10) break;
@@ -186,74 +194,60 @@ public class NumMatchSolverEditor : EditorWindow
     {
         var rows = board.GetLength(0);
         var cols = board.GetLength(1);
-        var valid = new HashSet<Move>();
+        var size = rows * cols;
+        var valid = new List<Move>();
 
-        int[] dr = { 0, 1, 1, 1 };
-        int[] dc = { 1, 0, 1, -1 };
-
-        for (var r1 = 0; r1 < rows; r1++)
+        for (var i = 0; i < size; i++)
         {
-            for (var c1 = 0; c1 < cols; c1++)
+            var r1 = i / cols;
+            var c1 = i % cols;
+            var v1 = board[r1, c1];
+            if (v1 == 0) continue;
+
+            foreach (var (dr, dc) in Directions)
             {
-                var v1 = board[r1, c1];
-                if (v1 == 0) continue;
+                var r = r1 + dr;
+                var c = c1 + dc;
 
-                for (var dir = 0; dir < 4; dir++)
+                while (r >= 0 && r < rows && c >= 0 && c < cols)
                 {
-                    for (var d = 1; d < Math.Max(rows, cols); d++)
+                    var v2 = board[r, c];
+
+                    if (v2 == 0)
                     {
-                        var r2 = r1 + dr[dir] * d;
-                        var c2 = c1 + dc[dir] * d;
-                        if (r2 < 0 || r2 >= rows || c2 < 0 || c2 >= cols) break;
-
-                        var v2 = board[r2, c2];
-                        if (v2 == 0) continue;
-
-                        if ((v1 == v2 || v1 + v2 == 10) && !IsBlocked(board, r1, c1, r2, c2))
-                            valid.Add(new Move { r1 = r1, c1 = c1, r2 = r2, c2 = c2 });
-
-                        break;
+                        r += dr;
+                        c += dc;
+                        continue;
                     }
+
+                    if (v1 == v2 || v1 + v2 == 10)
+                    {
+                        valid.Add(new Move { r1 = r1, c1 = c1, r2 = r, c2 = c });
+                    }
+
+                    break;
+                }
+            }
+
+            for (var j = i + 1; j < size; j++)
+            {
+                var r2 = j / cols;
+                var c2 = j % cols;
+                var v2 = board[r2, c2];
+
+                if (v2 == 0)
+                    continue;
+
+                if (v1 == v2 || v1 + v2 == 10)
+                {
+                    valid.Add(new Move { r1 = r1, c1 = c1, r2 = r2, c2 = c2 });
                 }
 
-                for (var dr2 = -1; dr2 <= 1; dr2++)
-                    for (var dc2 = -1; dc2 <= 1; dc2++)
-                    {
-                        if (dr2 == 0 && dc2 == 0) continue;
-
-                        var nr = r1 + dr2;
-                        var nc = c1 + dc2;
-                        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-
-                        var v2 = board[nr, nc];
-                        if (v2 == 0) continue;
-
-                        if (v1 + v2 == 10 || v1 == v2)
-                            valid.Add(new Move { r1 = r1, c1 = c1, r2 = nr, c2 = nc });
-                    }
+                break;
             }
         }
 
-        return valid.ToList();
-    }
-
-    private bool IsBlocked(int[,] board, int r1, int c1, int r2, int c2)
-    {
-        var dr = Math.Sign(r2 - r1);
-        var dc = Math.Sign(c2 - c1);
-
-        var r = r1 + dr;
-        var c = c1 + dc;
-
-        while (r != r2 || c != c2)
-        {
-            if (board[r, c] != 0) return true;
-
-            r += dr;
-            c += dc;
-        }
-
-        return false;
+        return valid;
     }
 
     private int CountGems(int[,] board)
