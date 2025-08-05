@@ -19,6 +19,7 @@ public class GameManager : SingletonPersistent<GameManager>
     }
 
     #region Update State
+    // Starts a new stage and resets resources.
     public void UpdateNewStage(int stage)
     {
         _currentStage = stage;
@@ -45,6 +46,7 @@ public class GameManager : SingletonPersistent<GameManager>
     #endregion
 
     #region Game Over
+    // Checks if all required gems have been collected.
     public void CheckWinGame()
     {
         var isWin = GemManager.Instance.GemProgresses.All(g => g.Collected == g.RequiredAmount);
@@ -53,6 +55,7 @@ public class GameManager : SingletonPersistent<GameManager>
         PopupController.Instance.ShowPopup(PopupController.Popup.WinPopup);
     }
 
+    // Checks if the player has no more valid pairs and no adds left.
     public void CheckLoseGame()
     {
         var isLose = !BoardController.Instance.AnyPair() && _addCount <= 0;

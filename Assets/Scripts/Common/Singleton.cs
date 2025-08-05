@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// Singleton for components that exist only in the current scene
 public class Singleton<T> : MonoBehaviour where T : Component
 {
     private static T _instance;
@@ -28,6 +29,7 @@ public class Singleton<T> : MonoBehaviour where T : Component
     }
 }
 
+// Singleton for components that should persist across scenes
 public class SingletonPersistent<T> : MonoBehaviour where T : Component
 {
     public static T Instance { get; private set; }

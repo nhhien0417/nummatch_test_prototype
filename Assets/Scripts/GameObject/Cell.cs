@@ -29,11 +29,13 @@ public class Cell : MonoBehaviour
     public bool IsActive => _isActive;
 
     #region Logic
+    // Called when the cell is clicked; only triggers if the cell is active
     public void OnClick()
     {
         if (_isActive) Board.Instance.OnCellSelected(this);
     }
 
+    // Updates visuals: text, color, and gem sprite based on new state
     public void SetState(bool isActive, int value, GemType gemType)
     {
         transform.DOKill();
@@ -50,6 +52,7 @@ public class Cell : MonoBehaviour
         _gem.GetComponent<Image>().sprite = GemManager.Instance.GetGemEntries().TryGetValue(gemType, out var sprite) ? sprite : null;
     }
 
+    // Animates the cell spawn: waits for delay, then scales down the foreground to show entry
     public void Spawn(float delay = 0f)
     {
         DOTween.Sequence()
@@ -63,6 +66,7 @@ public class Cell : MonoBehaviour
        .Append(_foreground.transform.DOScale(Vector3.zero, 0.3f).SetEase(Ease.InBack));
     }
 
+    // Creates a copy of the gem and animates it moving to the gem progress UI slot
     public void CollectGem(GemType gemType)
     {
         var gem = Instantiate(_gem, GameplayUI.Instance.transform, false);
@@ -100,6 +104,7 @@ public class Cell : MonoBehaviour
     #endregion
 
     #region Interact
+    // Animates cell disappearing when matched, and handles gem collection if any
     private void MatchCell()
     {
         DOTween.Sequence()
@@ -117,6 +122,7 @@ public class Cell : MonoBehaviour
         }
     }
 
+    // Highlights selected cell
     public void Select()
     {
         AudioManager.Instance.PlaySFX("choose_number");
@@ -134,6 +140,7 @@ public class Cell : MonoBehaviour
         }
     }
 
+    // Resets visual highlight of the selected cell
     public void Deselect()
     {
         if (_gemType == GemType.None)
@@ -149,6 +156,7 @@ public class Cell : MonoBehaviour
         }
     }
 
+    // Plays select-deselect animation to give feedback when match is invalid
     public void NotMatchDeselect()
     {
         if (_gemType == GemType.None)
@@ -167,6 +175,7 @@ public class Cell : MonoBehaviour
         }
     }
 
+    // Shakes the number text to indicate a blocked cell or invalid action
     public void ShakeBlockCell()
     {
         _text.rectTransform.DOKill();
@@ -175,6 +184,7 @@ public class Cell : MonoBehaviour
     #endregion
 
     #region Clear Row
+    // Animates cell disappearing visually
     public void HideCell()
     {
         DOTween.Sequence()
@@ -186,6 +196,7 @@ public class Cell : MonoBehaviour
         .Join(_text.DOFade(0f, 0.2f).SetEase(Ease.InSine));
     }
 
+    // Moves the cell up by a number of rows
     public void ShiftCellUp(int rows)
     {
         var rect = GetComponent<RectTransform>();
@@ -198,6 +209,7 @@ public class Cell : MonoBehaviour
     #endregion
 
     #region Hint
+    // Shows hint indicator
     public void Hint()
     {
         _hint.transform.DOKill();
@@ -209,6 +221,7 @@ public class Cell : MonoBehaviour
         transform.DOScale(1.05f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
     }
 
+    // Stops hint animation and hides hint indicator
     public void UnHint()
     {
         transform.DOKill();

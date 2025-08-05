@@ -23,6 +23,7 @@ public class Board : Singleton<Board>
     }
 
     #region Checker
+    // Returns true if two cells can be matched according to game rules
     public bool CanMatch(Cell selectedCell, Cell targetCell)
     {
         if (selectedCell == null || targetCell == null || selectedCell == targetCell)
@@ -34,11 +35,11 @@ public class Board : Singleton<Board>
         var valueA = selectedCell.Value;
         var valueB = targetCell.Value;
 
-        // Điều kiện 1: Cùng số hoặc tổng = 10
+        // Rule 1: Match if same number or their sum is 10
         if (!(valueA == valueB || valueA + valueB == 10))
             return false;
 
-        // Điều kiện 2: Trên cùng hàng, cột, hoặc chéo và không bị chặn
+        // Rule 2: Check if cells are aligned horizontally, vertically, or diagonally and not blocked
         var rowA = indexA / 9;
         var colA = indexA % 9;
         var rowB = indexB / 9;
@@ -56,6 +57,7 @@ public class Board : Singleton<Board>
             var col = colA + stepCol;
             var hasBlock = false;
 
+            // Traverse the path between selected and target cell to check for blocking active cells
             while (row != rowB || col != colB)
             {
                 var index = row * 9 + col;
@@ -79,7 +81,7 @@ public class Board : Singleton<Board>
             return true;
         }
 
-        // Điều kiện 3: Nằm liên tiếp trong list một chiều và không bị chặn
+        // Rule 3: Match if in a straight sequence (index-wise) and no cells in between are active
         var min = Mathf.Min(indexA, indexB);
         var max = Mathf.Max(indexA, indexB);
         var blocked = false;
@@ -102,6 +104,7 @@ public class Board : Singleton<Board>
         return true;
     }
 
+    // Checks if any full rows are empty to trigger clear
     private bool CheckClearRow()
     {
         var clearedRows = new List<int>();
@@ -154,6 +157,7 @@ public class Board : Singleton<Board>
         {
             for (var i = 0; i < _cells.Count; i++)
             {
+                // Calculate how many cleared rows are above current row to shift it upward
                 var row = i / BoardCols;
                 var shift = clearedRows.Count(r => row > r);
 
@@ -169,6 +173,7 @@ public class Board : Singleton<Board>
                 var start = row * BoardCols;
                 var end = Mathf.Min(start + BoardCols, _cells.Count);
 
+                // Remove cells in cleared rows and destroy their GameObjects
                 for (int i = end - 1; i >= start; i--)
                 {
                     _cells[i].transform.DOKill();
@@ -190,6 +195,7 @@ public class Board : Singleton<Board>
         return true;
     }
 
+    // If all cells are cleared, move to the next stage
     private void CheckClearBoard()
     {
         if (_cells.Count > 0) return;
@@ -199,6 +205,7 @@ public class Board : Singleton<Board>
     #endregion
 
     #region Cell Interaction
+    // Handles what happens when a player selects a cell
     public void OnCellSelected(Cell targetCell)
     {
         if (_selectedCell == null)
@@ -253,6 +260,7 @@ public class Board : Singleton<Board>
     #endregion
 
     #region Scroll View
+    // Update the height of the scrollable board container based on current number of rows
     public void UpdateContainerHeight()
     {
         var targetContentHeight = (TotalRows + 3) * 100f;
@@ -274,6 +282,7 @@ public class Board : Singleton<Board>
                          targetScroll, targetScroll == 1 ? 0f : 1f).SetEase(Ease.OutCubic).SetTarget(scrollRect);
     }
 
+    // Toggle fade effects based on scroll position (top or bottom)
     public void HandleScrollPosition(Vector2 normalizedPosition)
     {
         const float threshold = 0.0001f;

@@ -10,6 +10,7 @@ public class GemManager : SingletonPersistent<GemManager>
     private List<GemProgress> _gemProgresses = new();
     public List<GemProgress> GemProgresses => _gemProgresses;
 
+    // Get dictionary of gem types and their sprites
     public Dictionary<GemType, Sprite> GetGemEntries()
     {
         if (_gemDict != null) return _gemDict;
@@ -21,9 +22,11 @@ public class GemManager : SingletonPersistent<GemManager>
         return _gemDict;
     }
 
+    // Get list of gem types not fully collected
     public List<GemType> AvailableGemTypes => _gemProgresses.Where(g => g.Collected < g.RequiredAmount)
                                                             .Select(g => g.Type).ToList();
 
+    // Randomly generate required gem types and goals
     public void GenerateGemProgresses()
     {
         _gemProgresses.Clear();
@@ -37,6 +40,7 @@ public class GemManager : SingletonPersistent<GemManager>
         }
     }
 
+    // Update gem progress and trigger UI/game check
     public void UpdateGemProgress(GemType gemType)
     {
         var gemProgress = _gemProgresses.FirstOrDefault(g => g.Type == gemType);

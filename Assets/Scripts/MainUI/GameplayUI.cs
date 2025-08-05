@@ -36,6 +36,7 @@ public class GameplayUI : Singleton<GameplayUI>
         _hintText.text = GameManager.Instance.HintCount.ToString();
     }
 
+    // Animate add button to highlight
     public void HighlightAddBtn()
     {
         _addButton.transform.DOKill();
@@ -46,6 +47,7 @@ public class GameplayUI : Singleton<GameplayUI>
     #endregion
 
     #region Gem Progresses
+    // Instantiate and display gem progress UI
     public void SetupGems()
     {
         foreach (var gem in _gems)
@@ -64,12 +66,14 @@ public class GameplayUI : Singleton<GameplayUI>
         }
     }
 
+    // Update gem progress UI for a specific gem
     public void UpdateGemProgresses(GemProgress gemProgress)
     {
         var gem = _gems.FirstOrDefault(g => g.GemType == gemProgress.Type);
         gem.UpdateProgress(gemProgress.RequiredAmount - gemProgress.Collected);
     }
 
+    // Get the UI target position of a specific gem
     public RectTransform GetGemTarget(GemType gemType)
     {
         return _gems.FirstOrDefault(t => t.GemType == gemType).GetComponent<RectTransform>();

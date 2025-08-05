@@ -15,14 +15,15 @@ public class AddNumbers : MonoBehaviour
         var cellsCopy = originalCells.Where(c => c.IsActive).ToList();
         var startIndex = originalCells.Count;
 
+        // Update values and find all possible match pairs before cloning
         BoardController.Instance.UpdateBoardValues(cellsCopy);
         BoardController.Instance.FindAllMatchPairs();
 
         var spawnedGems = 0;
-        var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
+        var maxGems = GemManager.Instance.GemProgresses.Count(); // Maximum gems allowed this turn (Z)
 
         var spawnGemCounter = 0;
-        var gemInterval = Mathf.CeilToInt((cellsCopy.Count + 1) / 2); // Y
+        var gemInterval = Mathf.CeilToInt((cellsCopy.Count + 1) / 2); // Force spawn at least 1 gem every Y cells (Y)
 
         var forceSpawnGem = false;
         var spawnedGemIndexes = new List<int>();
@@ -39,9 +40,10 @@ public class AddNumbers : MonoBehaviour
             var shouldSpawnGem = false;
             var gemTypeToSpawn = GemType.None;
 
+            // Check if gem should be spawned
             if (spawnedGems < maxGems)
             {
-                var chance = Random.Range(5f, 8f); // X%
+                var chance = Random.Range(5f, 8f); // X% chance to spawn a gem (X)
 
                 if ((forceSpawnGem || Random.Range(0f, 100f) < chance) && BoardController.Instance.IsSafeToSpawnGem(currentIndex, spawnedGemIndexes))
                 {
@@ -66,6 +68,7 @@ public class AddNumbers : MonoBehaviour
                 spawnGemCounter++;
             }
 
+            // If no gem has been spawned for `gemInterval`, or no more safe spots exist, force the next one to spawn a gem
             forceSpawnGem = spawnGemCounter >= gemInterval || !BoardController.Instance.AnySafeIndexRemaining(currentIndex + 1, spawnedGemIndexes);
         }
 

@@ -7,7 +7,7 @@ public class HomeUI : Singleton<HomeUI>
         AudioManager.Instance.PlaySFX("pop_button");
         SceneManager.LoadSceneAsync("Gameplay").completed += op =>
         {
-            GameManager.Instance.NewGame();
+            GameManager.Instance.NewGame(); // Initialize new game after scene is loaded
         };
     }
 }

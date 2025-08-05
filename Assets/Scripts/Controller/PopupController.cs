@@ -9,8 +9,9 @@ public class PopupController : Singleton<PopupController>
     [SerializeField] private GameObject _winPopup, _losePopup;
     [SerializeField] private Transform _winContainer, _loseContainer;
 
-    private Popup _lastPopup;
+    private Popup _lastPopup; // Keeps track of the last shown popup
 
+    // Popup types
     public enum Popup
     {
         WinPopup,
@@ -20,6 +21,7 @@ public class PopupController : Singleton<PopupController>
     public void BackToHome() => HidePopup(() => GameplayUI.Instance.BackToHome());
     public void NewGame() => HidePopup(() => GameManager.Instance.NewGame());
 
+    // Show the selected popup (Win or Lose)
     public void ShowPopup(Popup popup)
     {
         var (popupObject, container) = GetPopupComponents(popup);
@@ -27,10 +29,11 @@ public class PopupController : Singleton<PopupController>
 
         _lastPopup = popup;
 
-        InstantiateGemList(container, false);
+        InstantiateGemList(container);
         AnimatePopupIn(popupObject);
     }
 
+    // Hide the current popup
     public void HidePopup(Action onComplete = null)
     {
         var (popupObject, _) = GetPopupComponents(_lastPopup);
@@ -43,7 +46,8 @@ public class PopupController : Singleton<PopupController>
         AnimatePopupOut(popupObject, onComplete);
     }
 
-    private void InstantiateGemList(Transform container, bool isLose)
+    // Instantiate gem list inside the popup (Win/Lose)
+    private void InstantiateGemList(Transform container)
     {
         foreach (Transform child in container)
             Destroy(child.gameObject);
@@ -51,7 +55,7 @@ public class PopupController : Singleton<PopupController>
         foreach (var gemProgress in GemManager.Instance.GemProgresses)
         {
             var gemObject = Instantiate(_gemPrefab, container).GetComponent<Gem>();
-            gemObject.UpdateGemInfo(gemProgress.RequiredAmount, gemProgress.Type, GemManager.Instance.GetGemEntries()[gemProgress.Type], isLose);
+            gemObject.UpdateGemInfo(gemProgress.RequiredAmount, gemProgress.Type, GemManager.Instance.GetGemEntries()[gemProgress.Type], false);
         }
     }
 
@@ -86,6 +90,7 @@ public class PopupController : Singleton<PopupController>
         });
     }
 
+    // Returns the popup GameObject and its container based on type
     private (GameObject popupObject, Transform container) GetPopupComponents(Popup popup)
     {
         return popup switch
