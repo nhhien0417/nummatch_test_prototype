@@ -71,7 +71,7 @@ public class NumMatchSolverEditor : EditorWindow
 
     private const int SAFETY_LIMIT = 100000;
     private const int COLS = 9;
-    private const int TOPK = 30;
+    private const int TOPK = 10;
 
     private string _inputText = "";
     private string _outputText = "";
@@ -167,22 +167,30 @@ public class NumMatchSolverEditor : EditorWindow
             if (current.gemsCollected >= gemTarget)
             {
                 var solStr = string.Join("|", current.moves.Select(m => m.ToString()));
+
                 if (solutions.Add(solStr))
                     allValidSolutions.Add(current);
+
                 if (solutions.Count >= 50) break;
+
                 continue;
             }
 
             var allPairs = FindAllValidPairs(current.board);
             var gemPositions = GetGemPositions(current.board);
+            var gemPaths = GetCellsBetweenGems(gemPositions);
 
             var prioritized = allPairs.Select(move =>
             {
                 var v1 = current.board[move.r1, move.c1];
                 var v2 = current.board[move.r2, move.c2];
-
                 var score = 0;
-                if (v1 == 5 && v2 == 5) score += 100;
+
+                if (v1 == 5 && v2 == 5)
+                    score += 1000;
+
+                if (gemPaths.Contains((move.r1, move.c1)) || gemPaths.Contains((move.r2, move.c2)))
+                    score += 500;
 
                 var delta = Math.Abs(move.r1 - move.r2) + Math.Abs(move.c1 - move.c2);
                 var dist = Mathf.Min(GetDistanceToNearestFive(move.r1, move.c1, gemPositions),
@@ -212,7 +220,7 @@ public class NumMatchSolverEditor : EditorWindow
         }
 
         return allValidSolutions.GroupBy(s => s.movesUsed).OrderBy(g => g.Key)
-                                .SelectMany(g => g.OrderBy(_ => Guid.NewGuid())).Take(10)
+                                .SelectMany(g => g.OrderBy(_ => Guid.NewGuid())).Take(TOPK)
                                 .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
     }
 
@@ -295,6 +303,39 @@ public class NumMatchSolverEditor : EditorWindow
         foreach (var (gr, gc) in gems)
             minDist = Mathf.Min(minDist, Mathf.Abs(gr - r) + Mathf.Abs(gc - c));
         return minDist == int.MaxValue ? 99 : minDist;
+    }
+
+    private HashSet<(int r, int c)> GetCellsBetweenGems(List<(int r, int c)> gems)
+    {
+        var set = new HashSet<(int r, int c)>();
+
+        for (var i = 0; i < gems.Count; i++)
+        {
+            for (var j = i + 1; j < gems.Count; j++)
+            {
+                var (r1, c1) = gems[i];
+                var (r2, c2) = gems[j];
+
+                var dr = r2 - r1;
+                var dc = c2 - c1;
+
+                if (dr == 0 || dc == 0 || Math.Abs(dr) == Math.Abs(dc))
+                {
+                    var steps = Math.Max(Math.Abs(dr), Math.Abs(dc));
+                    var stepR = dr / steps;
+                    var stepC = dc / steps;
+
+                    for (var k = 1; k < steps; k++)
+                    {
+                        var r = r1 + stepR * k;
+                        var c = c1 + stepC * k;
+                        set.Add((r, c));
+                    }
+                }
+            }
+        }
+
+        return set;
     }
 
     private int CountGems(int[,] board)
