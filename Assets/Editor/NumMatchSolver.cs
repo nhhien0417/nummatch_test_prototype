@@ -69,7 +69,7 @@ public class NumMatchSolverEditor : EditorWindow
         }
     }
 
-    private const int SAFETY_LIMIT = 100000;
+    private const int SAFETY_LIMIT = 200000;
     private const int COLS = 9;
     private const int TOP = 10;
 
@@ -155,6 +155,7 @@ public class NumMatchSolverEditor : EditorWindow
 
         var solutions = new HashSet<string>();
         var allValidSolutions = new List<State>();
+        var visited = new HashSet<string>();
 
         var queue = new PriorityQueue<State>();
         queue.Enqueue(new State { board = (int[,])original.Clone() }, 0);
@@ -176,6 +177,9 @@ public class NumMatchSolverEditor : EditorWindow
                 continue;
             }
 
+            var key = GetBoardKey(current.board);
+            if (!visited.Add(key)) continue;
+
             var allPairs = FindAllValidPairs(current.board);
             var gemPositions = GetGemPositions(current.board);
             var gemPaths = GetCellsBetweenGems(gemPositions);
@@ -191,11 +195,6 @@ public class NumMatchSolverEditor : EditorWindow
 
                 if (gemPaths.Contains((move.r1, move.c1)) || gemPaths.Contains((move.r2, move.c2)))
                     score += 500;
-
-                var delta = Math.Abs(move.r1 - move.r2) + Math.Abs(move.c1 - move.c2);
-                var dist = Mathf.Min(GetDistanceToNearestFive(move.r1, move.c1, gemPositions),
-                                     GetDistanceToNearestFive(move.r2, move.c2, gemPositions));
-                score -= dist + delta;
 
                 return (move, score);
             }).OrderByDescending(x => x.score).Take(TOP).Select(x => x.move);
@@ -222,6 +221,19 @@ public class NumMatchSolverEditor : EditorWindow
         return allValidSolutions.GroupBy(s => s.movesUsed).OrderBy(g => g.Key)
                                 .SelectMany(g => g.OrderBy(_ => Guid.NewGuid())).Take(TOP)
                                 .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
+    }
+
+    private string GetBoardKey(int[,] board)
+    {
+        var sb = new System.Text.StringBuilder();
+        var rows = board.GetLength(0);
+        var cols = board.GetLength(1);
+
+        for (var r = 0; r < rows; r++)
+            for (var c = 0; c < cols; c++)
+                sb.Append(board[r, c]).Append(',');
+
+        return sb.ToString();
     }
 
     private List<Move> FindAllValidPairs(int[,] board)
@@ -295,14 +307,6 @@ public class NumMatchSolverEditor : EditorWindow
                 if (board[r, c] == 5)
                     list.Add((r, c));
         return list;
-    }
-
-    private int GetDistanceToNearestFive(int r, int c, List<(int r, int c)> gems)
-    {
-        var minDist = int.MaxValue;
-        foreach (var (gr, gc) in gems)
-            minDist = Mathf.Min(minDist, Mathf.Abs(gr - r) + Mathf.Abs(gc - c));
-        return minDist == int.MaxValue ? 99 : minDist;
     }
 
     private HashSet<(int r, int c)> GetCellsBetweenGems(List<(int r, int c)> gems)
