@@ -71,7 +71,7 @@ public class NumMatchSolverEditor : EditorWindow
 
     private const int SAFETY_LIMIT = 100000;
     private const int COLS = 9;
-    private const int TOPK = 10;
+    private const int TOP = 10;
 
     private string _inputText = "";
     private string _outputText = "";
@@ -198,7 +198,7 @@ public class NumMatchSolverEditor : EditorWindow
                 score -= dist + delta;
 
                 return (move, score);
-            }).OrderByDescending(x => x.score).Take(TOPK).Select(x => x.move);
+            }).OrderByDescending(x => x.score).Take(TOP).Select(x => x.move);
 
             foreach (var move in prioritized)
             {
@@ -214,13 +214,13 @@ public class NumMatchSolverEditor : EditorWindow
                 if (v1 == 5) next.gemsCollected++;
                 if (v2 == 5 && (move.r1 != move.r2 || move.c1 != move.c2)) next.gemsCollected++;
 
-                var f = next.movesUsed + (gemTarget - next.gemsCollected);
+                var f = next.movesUsed + (gemTarget - next.gemsCollected) * 2;
                 queue.Enqueue(next, f);
             }
         }
 
         return allValidSolutions.GroupBy(s => s.movesUsed).OrderBy(g => g.Key)
-                                .SelectMany(g => g.OrderBy(_ => Guid.NewGuid())).Take(TOPK)
+                                .SelectMany(g => g.OrderBy(_ => Guid.NewGuid())).Take(TOP)
                                 .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
     }
 
