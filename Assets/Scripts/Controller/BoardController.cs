@@ -101,10 +101,10 @@ public class BoardController : Singleton<BoardController>
         FindAllMatchPairs();
 
         var spawnedGems = 0;
-        var maxGems = GemManager.Instance.GemProgresses.Count(); // Z
+        var maxGems = GemManager.Instance.GemProgresses.Count(); // Maximum gems allowed this turn (Z)
 
         var spawnGemCounter = 0;
-        var gemInterval = Mathf.CeilToInt((GenCells + 1) / 2); // Y
+        var gemInterval = Mathf.CeilToInt((GenCells + 1) / 2); // Force spawn at least 1 gem every Y cells (Y)
 
         var forceSpawnGem = false;
         var spawnedGemIndexes = new List<int>();
@@ -115,9 +115,10 @@ public class BoardController : Singleton<BoardController>
             var shouldSpawnGem = false;
             var gemTypeToSpawn = GemType.None;
 
+            // Check if gem should be spawned
             if (spawnedGems < maxGems)
             {
-                var chance = Random.Range(5f, 8f); // X%
+                var chance = Random.Range(5f, 8f); // X% chance to spawn a gem (X)
 
                 if ((forceSpawnGem || Random.Range(0f, 100f) < chance) && IsSafeToSpawnGem(i, spawnedGemIndexes))
                 {
@@ -127,7 +128,6 @@ public class BoardController : Singleton<BoardController>
                 }
             }
 
-            // Spawn cell
             var delay = i * 0.05f;
             var cell = SpawnCell(value, gemTypeToSpawn, delay);
             Board.Instance.GetCells().Add(cell);
@@ -143,6 +143,7 @@ public class BoardController : Singleton<BoardController>
                 spawnGemCounter++;
             }
 
+            // If no gem has been spawned for `gemInterval`, or no more safe spots exist, force the next one to spawn a gem
             forceSpawnGem = spawnGemCounter >= gemInterval || !AnySafeIndexRemaining(i + 1, spawnedGemIndexes);
         }
     }
@@ -150,11 +151,12 @@ public class BoardController : Singleton<BoardController>
     private bool TryGenerateBoard(int pairsCount)
     {
         _boardData = new CellData[GenCells];
-        _matchPairs = PickMatchPairs(pairsCount);
+        _matchPairs = PickMatchPairs(pairsCount); // Randomly pick positions to match
 
         var matchedIndices = new HashSet<int>();
         var valuePool = new List<int>();
 
+        // Ensure 1-9 appears at least once 
         for (var i = 1; i <= GenCols; i++)
             for (var j = 0; j < GenRows; j++)
                 valuePool.Add(i);
@@ -171,7 +173,7 @@ public class BoardController : Singleton<BoardController>
                 if (_boardData[otherIndex].Value != 0)
                 {
                     var otherVal = _boardData[otherIndex].Value;
-                    value = PickMatchingValue(otherVal, valuePool);
+                    value = PickMatchingValue(otherVal, valuePool); // Pick value that matches other
                     if (value == -1) return false;
 
                     matchedIndices.Add(index);
@@ -179,18 +181,18 @@ public class BoardController : Singleton<BoardController>
                 }
                 else
                 {
-                    value = PickRandomValue(index, valuePool, matchedIndices);
+                    value = PickRandomValue(index, valuePool, matchedIndices); // Pick random value
                     if (value == -1) return false;
                 }
             }
             else
             {
-                value = PickNonMatchingValue(index, valuePool);
+                value = PickNonMatchingValue(index, valuePool); // Pick non matching value
                 if (value == -1) return false;
             }
 
             _boardData[index] = new(value, true);
-            valuePool.Remove(value);
+            valuePool.Remove(value); // Remove used value from pool
         }
 
         return true;
@@ -205,15 +207,20 @@ public class BoardController : Singleton<BoardController>
             var row = i / GenCols;
             var col = i % GenCols;
 
+            // Add horizontal pair
             if (col < GenCols - 1)
                 allValidPairs.Add((i, i + 1));
+            // Add vertical pair
             if (row < GenRows - 1)
                 allValidPairs.Add((i, i + GenCols));
+            // Add diagonal pair (down-right)
             if (row < GenRows - 1 && col < GenCols - 1)
                 allValidPairs.Add((i, i + GenCols + 1));
+            // Add diagonal pair (down-left)
             if (row < GenRows - 1 && col > 0)
                 allValidPairs.Add((i, i + GenCols - 1));
 
+            // Wrap last column to next row start
             if (col == GenCols - 1 && row < GenRows - 1)
             {
                 var nextRowStart = (row + 1) * GenCols;
@@ -328,7 +335,7 @@ public class BoardController : Singleton<BoardController>
             // ↙ Diagonal Left-Down
             FindMatchInDirection(i, row, col, +1, -1, valA);
 
-            // ➕ Linear: Nearest active in index order without blocking
+            // Linear: Nearest active in index order without blocking
             for (var j = i + 1; j < total; j++)
             {
                 if (!_boardData[j].IsActive) continue;
