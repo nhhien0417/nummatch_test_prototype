@@ -211,10 +211,8 @@ public class NumMatchSolverEditor : EditorWindow
             }
         }
 
-        if (allValidSolutions.Count == 0) return new();
-
-        var minMoves = allValidSolutions.Min(s => s.movesUsed);
-        return allValidSolutions.Where(s => s.movesUsed == minMoves).OrderBy(_ => Guid.NewGuid()).Take(10)
+        return allValidSolutions.GroupBy(s => s.movesUsed).OrderBy(g => g.Key)
+                                .SelectMany(g => g.OrderBy(_ => Guid.NewGuid())).Take(10)
                                 .Select(s => string.Join("|", s.moves.Select(m => m.ToString()))).ToList();
     }
 
