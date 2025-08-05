@@ -169,7 +169,7 @@ public class NumMatchSolverEditor : EditorWindow
                 var solStr = string.Join("|", current.moves.Select(m => m.ToString()));
                 if (solutions.Add(solStr))
                     allValidSolutions.Add(current);
-                // if (solutions.Count >= 10) break;
+                if (solutions.Count >= 50) break;
                 continue;
             }
 
