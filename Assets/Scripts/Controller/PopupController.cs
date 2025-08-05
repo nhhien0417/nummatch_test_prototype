@@ -26,9 +26,8 @@ public class PopupController : Singleton<PopupController>
         if (popupObject.activeSelf) return;
 
         _lastPopup = popup;
-        var isLose = popup == Popup.LosePopup;
 
-        InstantiateGemList(container, isLose);
+        InstantiateGemList(container, false);
         AnimatePopupIn(popupObject);
     }
 
